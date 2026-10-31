@@ -3,6 +3,7 @@
 ## Git
 
 - **No co-author trailers.** Do not add `Co-Authored-By:` (or any other attribution trailer) to commit messages unless the repository owner explicitly asks for it in that request.
+- **One short-lived branch per ticket, merged into `main` by PR.** Branch from an up-to-date `main` and name the branch `<issue-number>-<slug>` (e.g. `2-walking-skeleton`). Open a PR whose description says `Closes #<n>`, merge once CI passes, then delete the branch. Never commit directly to `main`, and don't create long-lived release branches: `main` must always work. Release points are tags (e.g. `v1.0.0`) and GitHub milestones.
 
 ## GitHub
 
