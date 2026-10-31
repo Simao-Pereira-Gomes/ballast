@@ -208,4 +208,4 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - **Prerequisite for slice 1:** an anonymised Santander Portugal Excel export from the Owner, used to design the parser and stored outside version control. Only a synthetic fixture derived from its structure is committed.
 - **Rule Set defaults** (PPR caps, reserve months, debt threshold) must be checked against current Portuguese guidance and the latest Orçamento do Estado when the Advice slice is built. They are parameters precisely because they change.
 - Ballast gives generic, rules-based guidance for one person and is not regulated financial advice. If it is ever offered to other people, this needs revisiting (CMVM / MiFID II).
-- Domain language: `CONTEXT.md`. Decisions: `docs/adr/0001`–`docs/adr/0005`.
+- Domain language: `CONTEXT.md`. Decisions: `docs/adr/0001`–`docs/adr/0006`.
