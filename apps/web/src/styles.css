@@ -1,1 +1,127 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Ballast's design tokens live here and only here: colours (including one per
+ * Account Role), radii and the page-title type. Components use the Tailwind
+ * names (`bg-primary`, `bg-role-reserve`, `text-title`), never raw palette
+ * colours. Text pairs meet WCAG AA in both themes.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-inactive: var(--inactive);
+
+  /* One colour per Account Role: dots, chips and later charts. Always shown next to the role name. */
+  --color-role-operating-cash: var(--role-operating-cash);
+  --color-role-reserve: var(--role-reserve);
+  --color-role-investment: var(--role-investment);
+  --color-role-liability: var(--role-liability);
+}
+
+@theme {
+  /* Big, bold page titles. */
+  --text-title: 2.25rem;
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.025em;
+  --text-title--font-weight: 900;
+}
+
+/* Light: warm stone neutrals with an orange accent. */
+:root {
+  --radius: 0.625rem;
+  --background: oklch(98.5% 0.001 106.423); /* stone-50 */
+  --foreground: oklch(21.6% 0.006 56.043); /* stone-900 */
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(21.6% 0.006 56.043);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(21.6% 0.006 56.043);
+  --primary: oklch(55.3% 0.195 38.402); /* orange-700: white text passes AA */
+  --primary-foreground: oklch(100% 0 0);
+  --secondary: oklch(97% 0.001 106.424); /* stone-100 */
+  --secondary-foreground: oklch(21.6% 0.006 56.043);
+  --muted: oklch(97% 0.001 106.424);
+  --muted-foreground: oklch(44.4% 0.011 73.639); /* stone-600 */
+  --accent: oklch(97% 0.001 106.424);
+  --accent-foreground: oklch(21.6% 0.006 56.043);
+  --destructive: oklch(50.5% 0.213 27.518); /* red-700 */
+  --border: oklch(92.3% 0.003 48.717); /* stone-200 */
+  --input: oklch(86.9% 0.005 56.366); /* stone-300 */
+  --ring: oklch(55.3% 0.195 38.402);
+  --sidebar: oklch(97% 0.001 106.424);
+  --sidebar-foreground: oklch(21.6% 0.006 56.043);
+  --sidebar-border: oklch(92.3% 0.003 48.717);
+  --inactive: oklch(52% 0.012 58); /* sections not built yet: lighter than muted, still AA */
+  --role-operating-cash: oklch(68.5% 0.169 237.323); /* sky-500 */
+  --role-reserve: oklch(76.9% 0.188 70.08); /* amber-500 */
+  --role-investment: oklch(60.6% 0.25 292.717); /* violet-500 */
+  --role-liability: oklch(64.5% 0.246 16.439); /* rose-500 */
+}
+
+.dark {
+  --background: oklch(14.7% 0.004 49.25); /* stone-950 */
+  --foreground: oklch(97% 0.001 106.424); /* stone-100 */
+  --card: oklch(21.6% 0.006 56.043); /* stone-900 */
+  --card-foreground: oklch(97% 0.001 106.424);
+  --popover: oklch(21.6% 0.006 56.043);
+  --popover-foreground: oklch(97% 0.001 106.424);
+  --primary: oklch(70.5% 0.213 47.604); /* orange-500: near-black text passes AA */
+  --primary-foreground: oklch(14.7% 0.004 49.25);
+  --secondary: oklch(26.8% 0.007 34.298); /* stone-800 */
+  --secondary-foreground: oklch(97% 0.001 106.424);
+  --muted: oklch(26.8% 0.007 34.298);
+  --muted-foreground: oklch(73% 0.01 56.259); /* stone-400, lifted to keep AA on tinted cards */
+  --accent: oklch(26.8% 0.007 34.298);
+  --accent-foreground: oklch(97% 0.001 106.424);
+  --destructive: oklch(70.4% 0.191 22.216); /* red-400 */
+  --border: oklch(100% 0 0 / 10%);
+  --input: oklch(100% 0 0 / 18%);
+  --ring: oklch(70.5% 0.213 47.604);
+  --sidebar: oklch(18% 0.005 52);
+  --sidebar-foreground: oklch(97% 0.001 106.424);
+  --sidebar-border: oklch(100% 0 0 / 10%);
+  --inactive: oklch(62% 0.01 56); /* darker than muted, still AA */
+  --role-operating-cash: oklch(74.6% 0.16 232.661); /* sky-400 */
+  --role-reserve: oklch(82.8% 0.189 84.429); /* amber-400 */
+  --role-investment: oklch(70.2% 0.183 293.541); /* violet-400 */
+  --role-liability: oklch(71.2% 0.194 13.428); /* rose-400 */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}

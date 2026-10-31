@@ -7,6 +7,7 @@ import { defineConfig } from "vite"
 export default defineConfig({
   // Ballast is reachable from this machine only (ADR 0001).
   server: { host: "127.0.0.1", port: 3000 },
+  resolve: { tsconfigPaths: true },
   plugins: [
     tailwindcss(),
     tanstackStart(),
