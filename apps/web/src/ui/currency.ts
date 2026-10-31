@@ -1,6 +1,4 @@
 import { Money } from "@ballast/core"
 
-export const currencyOptions = Money.currencies.map((currency) => ({
-  value: currency,
-  label: currency,
-}))
+/** The currency a new Account gets. EUR is the only one supported today. */
+export const defaultCurrency: string = Money.currencies[0] ?? "EUR"

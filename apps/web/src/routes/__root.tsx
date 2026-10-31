@@ -1,15 +1,19 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { AppShell } from "../components/shell/app-shell.tsx"
 import appCss from "../styles.css?url"
+import { themeBootScript } from "../ui/theme.ts"
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Ballast" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
+    // Before the first paint, so a remembered theme never flashes the other one.
+    scripts: [{ children: themeBootScript }],
   }),
   component: RootComponent,
 })
@@ -17,18 +21,21 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <AppShell>
+        <Outlet />
+      </AppShell>
     </RootDocument>
   )
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    // The boot script sets the theme class before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
+      <body className="min-h-dvh">
         {children}
         <Scripts />
       </body>
