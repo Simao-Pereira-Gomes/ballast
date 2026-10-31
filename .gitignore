@@ -1,0 +1,35 @@
+# Dependencies & builds
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Financial data — never commit bank exports or personal data
+data/
+imports/
+samples/private/
+*.csv
+*.xlsx
+*.xls
+*.ofx
+*.qif
+*.pdf
+!test/fixtures/**/*.csv
+
+# Database dumps & local volumes
+*.dump
+*.sql.gz
+pgdata/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
