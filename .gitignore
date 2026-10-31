@@ -43,3 +43,8 @@ pgdata/
 .tanstack/
 test-results/
 playwright-report/
+
+# Paraglide: compiled messages and the inlang plugin cache (regenerated on compile)
+apps/web/src/paraglide/
+apps/web/project.inlang/cache/
+apps/web/project.inlang/README.md

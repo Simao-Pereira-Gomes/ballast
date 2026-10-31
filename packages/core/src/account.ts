@@ -5,21 +5,20 @@ import type { OwnerId } from "./owner.ts"
 export const AccountId = Schema.String.check(Schema.isUUID()).pipe(Schema.brand("AccountId"))
 export type AccountId = typeof AccountId.Type
 
-/** What an Account's money is for. Advice depends on it. */
 export const AccountRole = Schema.Literals(["operating_cash", "reserve", "investment", "liability"])
 export type AccountRole = typeof AccountRole.Type
 
 export const accountRoles: readonly AccountRole[] = AccountRole.literals
 
 const AccountName = Schema.Trim.check(
-  Schema.isNonEmpty({ message: "Name is required" }),
-  Schema.isMaxLength(100, { message: "Name must be at most 100 characters" }),
+  Schema.isNonEmpty({ message: "required" }),
+  Schema.isMaxLength(100, { message: "too_long" }),
 )
 
 const NewAccountSchema = Schema.Struct({
   name: AccountName,
-  role: AccountRole.annotate({ message: "Choose an Account Role" }),
-  currency: Currency.annotate({ message: "Only EUR is supported" }),
+  role: AccountRole.annotate({ message: "required" }),
+  currency: Currency.annotate({ message: "unsupported" }),
 })
 
 export type NewAccount = typeof NewAccountSchema.Type
@@ -32,26 +31,38 @@ export interface Account {
   readonly currency: Currency
 }
 
-export interface Problem {
-  readonly field: string
-  readonly message: string
-}
+export type AccountProblem =
+  | { readonly field: "name"; readonly problem: "required" | "too_long" }
+  | { readonly field: "role"; readonly problem: "required" }
+  | { readonly field: "currency"; readonly problem: "unsupported" }
 
 export class InvalidAccount extends Data.TaggedError("InvalidAccount")<{
-  readonly problems: readonly Problem[]
+  readonly problems: readonly AccountProblem[]
 }> {}
 
 const formatIssue = SchemaIssue.makeFormatterStandardSchemaV1()
+
+const toProblem = (field: string, code: string): AccountProblem => {
+  switch (field) {
+    case "name":
+      return { field, problem: code === "too_long" ? "too_long" : "required" }
+    case "role":
+      return { field, problem: "required" }
+    case "currency":
+      return { field, problem: "unsupported" }
+    default:
+      throw new Error(`decodeNewAccount: unexpected problem at "${field}": ${code}`)
+  }
+}
 
 export const decodeNewAccount = (input: unknown): Result.Result<NewAccount, InvalidAccount> =>
   Schema.decodeUnknownResult(NewAccountSchema)(input, { errors: "all" }).pipe(
     Result.mapError(
       (error) =>
         new InvalidAccount({
-          problems: formatIssue(error.issue).issues.map((problem) => ({
-            field: (problem.path ?? []).map(String).join("."),
-            message: problem.message,
-          })),
+          problems: formatIssue(error.issue).issues.map((issue) =>
+            toProblem((issue.path ?? []).map(String).join("."), issue.message),
+          ),
         }),
     ),
   )

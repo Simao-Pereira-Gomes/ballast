@@ -1,4 +1,4 @@
-import type { Problem } from "@ballast/core"
+import type { AccountProblem } from "@ballast/core"
 import { useRef, useState } from "react"
 import type { SubmitEvent } from "react"
 import { Button } from "@/components/ui/button.tsx"
@@ -13,8 +13,10 @@ import {
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { cn } from "@/lib/utils.ts"
-import { accountRoleOptions } from "@/ui/account-role.ts"
+import { m } from "@/paraglide/messages.js"
+import { accountRoleDescription, accountRoleLabel, accountRoles } from "@/ui/account-role.ts"
 import { defaultCurrency } from "@/ui/currency.ts"
+import { accountProblemMessage } from "@/ui/problems.ts"
 import { RoleDot } from "./role-dot.tsx"
 
 export interface OpenAccountDetails {
@@ -24,7 +26,7 @@ export interface OpenAccountDetails {
 }
 
 export type OpenAccountOutcome =
-  { readonly ok: true } | { readonly ok: false; readonly problems: readonly Problem[] }
+  { readonly ok: true } | { readonly ok: false; readonly problems: readonly AccountProblem[] }
 
 /**
  * Opening an Account: a bottom sheet on phones, a centred dialog on larger
@@ -46,6 +48,7 @@ export function OpenAccountDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         {...(onCloseAutoFocus ? { onCloseAutoFocus } : {})}
+        closeLabel={m.close()}
         className={cn(
           "max-h-[92dvh] gap-5 overflow-y-auto rounded-3xl border-0 bg-card p-6",
           // Phones: a sheet along the bottom edge, clear of the home indicator.
@@ -55,8 +58,8 @@ export function OpenAccountDialog({
       >
         <div aria-hidden className="mx-auto -mt-2 h-1.5 w-12 rounded-full bg-input md:hidden" />
         <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl font-bold">Open an Account</DialogTitle>
-          <DialogDescription>Name it and say what it&apos;s for.</DialogDescription>
+          <DialogTitle className="text-2xl font-bold">{m.open_account_title()}</DialogTitle>
+          <DialogDescription>{m.open_account_description()}</DialogDescription>
         </DialogHeader>
         <OpenAccountForm
           onSubmit={onSubmit}
@@ -82,7 +85,7 @@ function OpenAccountForm({
   onSubmit: (details: OpenAccountDetails) => Promise<OpenAccountOutcome>
   onOpened: () => void
 }>) {
-  const [problems, setProblems] = useState<readonly Problem[]>([])
+  const [problems, setProblems] = useState<readonly AccountProblem[]>([])
   const [submitting, setSubmitting] = useState(false)
   const nameRef = useRef<HTMLInputElement>(null)
   const firstRoleRef = useRef<HTMLInputElement>(null)
@@ -123,30 +126,30 @@ function OpenAccountForm({
       <input type="hidden" name="currency" value={defaultCurrency} />
 
       <div className="space-y-2">
-        <Label htmlFor="account-name">Name</Label>
+        <Label htmlFor="account-name">{m.account_name()}</Label>
         <Input
           ref={nameRef}
           id="account-name"
           name="name"
           autoComplete="off"
-          placeholder="e.g. Santander Current"
+          placeholder={m.account_name_placeholder()}
           aria-invalid={nameProblem !== undefined}
           aria-describedby={nameProblem ? "account-name-problem" : undefined}
           className="h-12 rounded-2xl bg-secondary px-4 text-base md:text-base dark:bg-secondary"
         />
         {nameProblem && (
           <p id="account-name-problem" className="text-sm text-destructive">
-            {nameProblem.message}
+            {accountProblemMessage(nameProblem)}
           </p>
         )}
       </div>
 
       <fieldset aria-describedby={roleProblem ? "account-role-problem" : undefined}>
-        <legend className="text-sm font-medium">What is this Account for?</legend>
+        <legend className="text-sm font-medium">{m.account_role_question()}</legend>
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
-          {accountRoleOptions.map((option, index) => (
+          {accountRoles.map((role, index) => (
             <label
-              key={option.value}
+              key={role}
               className={cn(
                 "relative cursor-pointer rounded-2xl border-2 border-transparent bg-secondary p-3 transition-colors",
                 "has-checked:border-primary has-checked:bg-primary/10",
@@ -157,41 +160,43 @@ function OpenAccountForm({
                 ref={index === 0 ? firstRoleRef : undefined}
                 type="radio"
                 name="role"
-                value={option.value}
-                aria-describedby={`account-role-${option.value}-description`}
+                value={role}
+                aria-describedby={`account-role-${role}-description`}
                 className="absolute inset-0 cursor-pointer appearance-none rounded-2xl opacity-0"
               />
               <span className="flex items-center gap-2 font-semibold">
-                <RoleDot role={option.value} className="size-2.5" />
-                {option.label}
+                <RoleDot role={role} className="size-2.5" />
+                {accountRoleLabel(role)}
               </span>
               <span
-                id={`account-role-${option.value}-description`}
+                id={`account-role-${role}-description`}
                 className="mt-0.5 block text-xs text-muted-foreground"
               >
-                {option.description}
+                {accountRoleDescription(role)}
               </span>
             </label>
           ))}
         </div>
         {roleProblem && (
           <p id="account-role-problem" className="mt-2 text-sm text-destructive">
-            {roleProblem.message}
+            {accountProblemMessage(roleProblem)}
           </p>
         )}
       </fieldset>
 
-      <p className="text-sm text-muted-foreground">Currency: {defaultCurrency}</p>
+      <p className="text-sm text-muted-foreground">
+        {m.account_currency({ currency: defaultCurrency })}
+      </p>
       {otherProblems.map((problem) => (
         <p key={problem.field} className="text-sm text-destructive">
-          {problem.message}
+          {accountProblemMessage(problem)}
         </p>
       ))}
 
       <div className="flex gap-3">
         <DialogClose asChild>
           <Button type="button" variant="secondary" className="h-12 flex-1 rounded-2xl text-base">
-            Cancel
+            {m.cancel()}
           </Button>
         </DialogClose>
         <Button
@@ -199,7 +204,7 @@ function OpenAccountForm({
           disabled={submitting}
           className="h-12 flex-1 rounded-2xl text-base font-semibold"
         >
-          {submitting ? "Opening…" : "Open Account"}
+          {submitting ? m.opening_account() : m.open_account()}
         </Button>
       </div>
     </form>

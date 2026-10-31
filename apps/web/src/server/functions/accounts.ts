@@ -3,7 +3,7 @@ import { Schema } from "effect"
 import { accountsOfCurrentOwner, openAccountForCurrentOwner } from "../accounts.ts"
 import { runAction, runQuery } from "../runtime.ts"
 
-export type { Problem } from "@ballast/core"
+export type { AccountProblem } from "@ballast/core"
 
 /** The shape a form submits; the Accounts service checks the rules. */
 const AccountForm = Schema.Struct({

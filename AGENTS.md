@@ -22,6 +22,7 @@ Stack and rationale: ADRs 0003–0005.
 - **Effect 4 only.** Use `Result`, not `Either`. Import Schema from `effect` (`effect/Schema`), never `@effect/schema`. A `Result` can't be `yield*`-ed in `Effect.gen`; lift it with `Effect.fromResult`. Check the installed `.d.ts` files rather than relying on memory of v3 APIs.
 - **Expected failures are typed errors; bugs throw.** A Balance Discrepancy or an uncertain classification is normal output, not an error.
 - **Money is integer cents through `Money`.** No floating point on amounts, no `toFixed`, no display formatting outside the core `Money` formatter. Postgres stores amounts as `bigint`.
+- **Interface text only through messages.** Every user-facing string lives in `apps/web/messages/{en,pt-PT}.json` (Paraglide, ADR 0006), using the pt-PT terms from `CONTEXT.md`. The core returns codes and parameters, never sentences; `Money.format` and `formatDate` take a `Locale`.
 - **Calendar dates are `Temporal.PlainDate`.** No `Date` in domain code; `Date`/`Instant` only for technical timestamps such as `created_at`.
 - **Everything is Owner-scoped.** Every persistence function takes an `OwnerId`, and every table has `owner_id` with composite `(owner_id, …)` foreign keys.
 - **Migrations are handwritten SQL**, committed and reviewed, run by Effect's `Migrator`.

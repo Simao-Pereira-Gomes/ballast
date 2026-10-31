@@ -1,5 +1,5 @@
 import { InvalidAccount } from "@ballast/core"
-import type { Problem } from "@ballast/core"
+import type { AccountProblem } from "@ballast/core"
 import { Effect, Layer, ManagedRuntime, Schedule } from "effect"
 import type { SqlClient } from "effect/sql/SqlClient"
 import { DatabaseLive } from "./database.ts"
@@ -29,7 +29,7 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 
 export type ActionResult<A> =
   | { readonly ok: true; readonly value: A }
-  | { readonly ok: false; readonly problems: readonly Problem[] }
+  | { readonly ok: false; readonly problems: readonly AccountProblem[] }
 
 /** Errors the Owner can fix by changing what they submitted. */
 type Fixable = InvalidAccount
