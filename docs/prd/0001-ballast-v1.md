@@ -153,10 +153,11 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - Functional core, imperative shell: all financial logic lives in pure modules with no I/O, and Postgres, HTTP and UI form a thin shell around them.
 - Money is always integer cents with an explicit currency. Floating point never touches amounts. Splits use a largest-remainder allocation so parts always sum to the whole.
 - Every persisted record is scoped to an Owner from the first migration. All queries are Owner-scoped.
+- Stack: one TanStack Start app on Node in a pnpm workspace with a pure `packages/core` (ADR 0003); Effect 4, with `effect/sql` on Postgres instead of an ORM (ADR 0004); Santander Excel exports decoded into a grid of cells in the shell (ADR 0005).
 
 ### Deep core modules (pure)
 - **Money**: cents arithmetic, comparison, allocation and formatting in the Base Currency.
-- **Statement Parser**: one adapter per bank behind a single interface that takes the raw file and returns normalised statement lines (date, amount with sign, normalised description, optional bank transaction ID) plus Balance Checkpoints. Santander Portugal is the only adapter in v1, built against a real anonymised sample export. Adapters never categorise.
+- **Statement Parser**: one adapter per bank behind a single interface that takes a decoded grid of cells (the shell decodes the Excel file, with numbers as exact decimal strings; ADR 0005) and returns normalised statement lines (date, amount with sign, normalised description, optional bank transaction ID) plus Balance Checkpoints. Santander Portugal's Excel export is the only adapter in v1, built against a real anonymised sample export. Adapters never categorise.
 - **Ledger Ingest**: given an Account's existing Transactions and a parsed statement, it returns new Transactions, skipped duplicates and any Balance Discrepancies. Fingerprint = Account + date + amount + normalised description + occurrence index within the file. The bank transaction ID takes precedence when present.
 - **Classifier**: given a Transaction and the Owner's ordered Categorisation Rules, it returns Category, Essential flag and the reason (which Rule, or "manual"/"none"). It can also propose a Rule from a manual correction. Rule matching is deterministic, and the first match wins in priority order.
 - **Pairing Engine**: given Transactions, it suggests Transfer pairs (opposite sign, equal amount, two different Owner Accounts, configurable day window) and Matches (manual vs imported: same Account, same amount, date within ±3 days). It returns suggestions only and never applies them.
@@ -187,6 +188,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 
 - Open Banking / automatic bank sync (planned later as another Transaction source).
 - Bank formats other than Santander Portugal.
+- PDF statement import, including Santander's PDF export (ADR 0005).
 - Authentication, multiple Owners in practice and hosted deployment (the model supports them, but v1 doesn't ship them).
 - Multiple currencies and FX (Accounts record a currency, but only EUR is supported).
 - Per-holding investment tracking and live price feeds (Valuations are per Account and entered manually or taken from exports).
@@ -199,7 +201,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 ## Further Notes
 
 - **Build order (vertical slices, each usable on its own):** (1) Ledger: Owner, Accounts with Roles, Santander Import, manual entry, dedup, Balance Checkpoints. (2) Classification: Categories with Essential flag, Rules, Review Queue, Transfers, Refunds. (3) Advice: Financial Profile, default Rule Set, Essential Baseline, Reserve Target, Allocation Waterfall with Liabilities, Allocation Status. (4) Forecast: Recurring Items, Variable Spending, 12-month Forecast feeding the Essential Baseline. (5) Recommendations: Wrappers, Target Allocation, follow-up tracking, Valuations, Net Worth. Matches can move into slice 1 if convenient.
-- **Prerequisite for slice 1:** an anonymised Santander Portugal export from the Owner, used to design the parser and stored outside version control. Only a synthetic fixture derived from its structure is committed.
+- **Prerequisite for slice 1:** an anonymised Santander Portugal Excel export from the Owner, used to design the parser and stored outside version control. Only a synthetic fixture derived from its structure is committed.
 - **Rule Set defaults** (PPR caps, reserve months, debt threshold) must be checked against current Portuguese guidance and the latest Orçamento do Estado when the Advice slice is built. They are parameters precisely because they change.
 - Ballast gives generic, rules-based guidance for one person and is not regulated financial advice. If it is ever offered to other people, this needs revisiting (CMVM / MiFID II).
-- Domain language: `CONTEXT.md`. Decisions: `docs/adr/0001`, `docs/adr/0002`.
+- Domain language: `CONTEXT.md`. Decisions: `docs/adr/0001`–`docs/adr/0005`.
