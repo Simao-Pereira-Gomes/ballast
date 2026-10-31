@@ -148,6 +148,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 ## Implementation Decisions
 
 ### Architecture
+
 - TypeScript server web app with PostgreSQL, run locally via Docker Compose (ADR 0001). No authentication in v1. It binds to localhost only, and exposing it requires HTTPS plus authentication first.
 - Single-entry Transactions per Account, with Transfers as explicit links and integrity enforced through Balance Checkpoints (ADR 0002). Not double-entry.
 - Functional core, imperative shell: all financial logic lives in pure modules with no I/O, and Postgres, HTTP and UI form a thin shell around them.
@@ -156,6 +157,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - Stack: one TanStack Start app on Node in a pnpm workspace with a pure `packages/core` (ADR 0003); Effect 4, with `effect/sql` on Postgres instead of an ORM (ADR 0004); Santander Excel exports decoded into a grid of cells in the shell (ADR 0005).
 
 ### Deep core modules (pure)
+
 - **Money**: cents arithmetic, comparison, allocation and formatting in the Base Currency.
 - **Statement Parser**: one adapter per bank behind a single interface that takes a decoded grid of cells (the shell decodes the Excel file, with numbers as exact decimal strings; ADR 0005) and returns normalised statement lines (date, amount with sign, normalised description, optional bank transaction ID) plus Balance Checkpoints. Santander Portugal's Excel export is the only adapter in v1, built against a real anonymised sample export. Adapters never categorise.
 - **Ledger Ingest**: given an Account's existing Transactions and a parsed statement, it returns new Transactions, skipped duplicates and any Balance Discrepancies. Fingerprint = Account + date + amount + normalised description + occurrence index within the file. The bank transaction ID takes precedence when present.
@@ -167,11 +169,13 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - **Rule Set**: versioned, immutable parameter sets. Parameters: Operating Cash target (months of total Expenses), Starter Reserve (months of Essential Baseline), base reserve months, Financial Profile modifiers (employment type, dependents, household incomes), reserve-month cap, High-Interest Debt threshold (APR), PPR deduction rate and caps by age band, Target Allocation formula, and Reserve-eligibility notes. Editing creates a new version. The default version encodes Portuguese guidance.
 
 ### Shell modules
+
 - **Persistence**: Owner-scoped repositories for Owners, Accounts, Imports, Transactions, Transfers, Matches, Categories, Categorisation Rules, Recurring Items, Valuations, Balance Checkpoints, Financial Profiles, Rule Set versions and Recommendations. Imports are reversible: each Transaction records the Import that created it.
 - **Application services**: Import (parse → ingest → classify → pair → persist → refresh Review Queue), Review Queue aggregation, Essential Baseline computation (max of trailing-actual and Forecast averages, falling back to the manual estimate under 3 months of history and marked provisional), Recommendation issuance (on demand, or triggered by a confirmed salary Recurring Item arriving) and Recommendation follow-up matching.
 - **HTTP API + web UI**: responsive browser UI over the services. The API contract is internal in v1.
 
 ### Data rules
+
 - Revenue and Expense are derived: any Transaction not part of a Transfer is Revenue (inflow) or Expense (outflow). A Refund is an inflow categorised into an Expense Category and counted as a negative Expense.
 - Market gains are the change in Valuation not explained by Transfers. They never enter Revenue, Expenses or Net Savings.
 - Net Worth = Account balances + latest Valuations − Liability balances. It's for reporting only.

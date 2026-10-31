@@ -1,0 +1,16 @@
+import tailwindcss from "@tailwindcss/vite"
+import { tanstackStart } from "@tanstack/react-start/plugin/vite"
+import viteReact from "@vitejs/plugin-react"
+import { nitro } from "nitro/vite"
+import { defineConfig } from "vite"
+
+export default defineConfig({
+  // Ballast is reachable from this machine only (ADR 0001).
+  server: { host: "127.0.0.1", port: 3000 },
+  plugins: [
+    tailwindcss(),
+    tanstackStart(),
+    nitro({ plugins: ["./src/server/startup.ts"] }),
+    viteReact(),
+  ],
+})

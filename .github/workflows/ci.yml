@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - run: npm install -g pnpm@12.16.1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - name: Unit tests
+        run: pnpm test
+      - name: Integration tests (Postgres via Testcontainers)
+        run: pnpm test:integration
+      - name: Smoke test
+        run: |
+          pnpm --filter @ballast/web exec playwright install --with-deps chromium
+          pnpm test:e2e
