@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label.tsx"
 import { cn } from "@/lib/utils.ts"
 import { accountRoleOptions } from "@/ui/account-role.ts"
 import { defaultCurrency } from "@/ui/currency.ts"
-import { RoleDot } from "./account-list.tsx"
+import { RoleDot } from "./role-dot.tsx"
 
 export interface OpenAccountDetails {
   readonly name: string
@@ -49,11 +49,11 @@ export function OpenAccountDialog({
         className={cn(
           "max-h-[92dvh] gap-5 overflow-y-auto rounded-3xl border-0 bg-card p-6",
           // Phones: a sheet along the bottom edge, clear of the home indicator.
-          "max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
-          "max-sm:data-[state=closed]:slide-out-to-bottom max-sm:data-[state=closed]:zoom-out-100 max-sm:data-[state=open]:slide-in-from-bottom max-sm:data-[state=open]:zoom-in-100",
+          "max-w-none sm:max-w-none md:max-w-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-b-none max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+          "max-md:data-[state=closed]:slide-out-to-bottom max-md:data-[state=closed]:zoom-out-100 max-md:data-[state=open]:slide-in-from-bottom max-md:data-[state=open]:zoom-in-100",
         )}
       >
-        <div aria-hidden className="mx-auto -mt-2 h-1.5 w-12 rounded-full bg-input sm:hidden" />
+        <div aria-hidden className="mx-auto -mt-2 h-1.5 w-12 rounded-full bg-input md:hidden" />
         <DialogHeader className="text-left">
           <DialogTitle className="text-2xl font-bold">Open an Account</DialogTitle>
           <DialogDescription>Name it and say what it&apos;s for.</DialogDescription>

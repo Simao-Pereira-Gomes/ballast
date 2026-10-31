@@ -10,7 +10,7 @@ export const accountRoleLabels: Record<AccountRole, string> = {
 
 /** One line on what each role is for, shown when the Owner picks one. */
 export const accountRoleDescriptions: Record<AccountRole, string> = {
-  operating_cash: "Day-to-day money for bills and spending.",
+  operating_cash: "Day-to-day money for bills and other Expenses.",
   reserve: "Your safety reserve. Counts towards the Reserve Target.",
   investment: "Money invested for the long term.",
   liability: "Debt you owe, such as cards and loans.",

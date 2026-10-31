@@ -1,12 +1,8 @@
 import { Anchor, Plus } from "lucide-react"
-import type { Ref } from "react"
 import { Button } from "@/components/ui/button.tsx"
 
 /** What the Accounts page shows before the Owner has opened any Account. */
-export function EmptyAccounts({
-  onOpenAccount,
-  buttonRef,
-}: Readonly<{ onOpenAccount: () => void; buttonRef?: Ref<HTMLButtonElement> }>) {
+export function EmptyAccounts({ onOpenAccount }: Readonly<{ onOpenAccount: () => void }>) {
   return (
     <div className="mx-auto mt-16 max-w-md text-center">
       <div className="mx-auto grid size-20 place-items-center rounded-full bg-primary/10 text-primary">
@@ -17,7 +13,6 @@ export function EmptyAccounts({
         Ballast needs to know where your money lives. Add each Account and say what it&apos;s for.
       </p>
       <Button
-        ref={buttonRef}
         className="mt-6 h-12 rounded-2xl px-6 text-base font-semibold"
         onClick={onOpenAccount}
       >

@@ -1,4 +1,4 @@
-import { Money } from "@ballast/core"
+import type { Money } from "@ballast/core"
 
-/** The currency a new Account gets. EUR is the only one supported today. */
-export const defaultCurrency: string = Money.currencies[0] ?? "EUR"
+/** The currency a new Account gets: the Base Currency, the only one supported today. */
+export const defaultCurrency: Money.Currency = "EUR"

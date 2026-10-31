@@ -1,10 +1,10 @@
-import type { Account, AccountRole } from "@ballast/core"
+import type { Account } from "@ballast/core"
 import { useState } from "react"
 import type { ReactNode } from "react"
-import { cn } from "@/lib/utils.ts"
 import { accountsWithRole, countByRole } from "@/ui/account-filter.ts"
 import type { RoleFilter } from "@/ui/account-filter.ts"
-import { accountRoleDot, accountRoleLabels, accountRoleOptions } from "@/ui/account-role.ts"
+import { accountRoleLabels, accountRoleOptions } from "@/ui/account-role.ts"
+import { RoleDot } from "./role-dot.tsx"
 
 export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[] }>) {
   const [filter, setFilter] = useState<RoleFilter>("all")
@@ -62,12 +62,6 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
         </ul>
       )}
     </section>
-  )
-}
-
-export function RoleDot({ role, className }: Readonly<{ role: AccountRole; className?: string }>) {
-  return (
-    <span aria-hidden className={cn("shrink-0 rounded-full", accountRoleDot[role], className)} />
   )
 }
 
