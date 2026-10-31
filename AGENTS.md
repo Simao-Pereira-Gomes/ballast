@@ -3,6 +3,7 @@
 ## Git
 
 - **No co-author trailers.** Do not add `Co-Authored-By:` (or any other attribution trailer) to commit messages unless the repository owner explicitly asks for it in that request.
+- **One short-lived branch per ticket, merged into `main` by PR.** Branch from an up-to-date `main` and name the branch `<issue-number>-<slug>` (e.g. `2-walking-skeleton`). Open a PR whose description says `Closes #<n>`, merge once CI passes, then delete the branch. Never commit directly to `main`, and don't create long-lived release branches: `main` must always work. Release points are tags (e.g. `v1.0.0`) and GitHub milestones.
 
 ## GitHub
 
@@ -16,9 +17,9 @@
 
 Stack and rationale: ADRs 0003–0005.
 
-- **Routes only call application services.** Loaders and server functions call one service through `runtime.runPromise` (via the shared helper) and contain no SQL, domain logic or direct core calls.
-- **The core stays pure.** `packages/core` performs no I/O and depends on nothing except `effect`. It may use only Effect's pure modules (`Result`, `Option`, `Data`, `Brand`, `Match`, `Schema`, `Order`, `Equivalence`) and never `Effect`, `Layer` or `Context`.
-- **Effect 4 only.** Use `Result`, not `Either`. Import Schema from `effect` (`effect/Schema`), never `@effect/schema`. Check v4 docs rather than relying on memory of v3 APIs.
+- **Routes only call application services.** Loaders and server functions call one service through `runtime.runPromise` (via the shared helper) and contain no SQL, domain logic or direct core calls. oxlint enforces this: files in `apps/web/src/routes/` may import server code only from `src/server/functions/`.
+- **The core stays pure.** `packages/core` performs no I/O and depends on nothing except `effect`. It may use only Effect's pure modules (`Result`, `Option`, `Data`, `Brand`, `Match`, `Schema`, `SchemaIssue`, `Order`, `Equivalence`) and never `Effect`, `Layer` or `Context`.
+- **Effect 4 only.** Use `Result`, not `Either`. Import Schema from `effect` (`effect/Schema`), never `@effect/schema`. A `Result` can't be `yield*`-ed in `Effect.gen`; lift it with `Effect.fromResult`. Check the installed `.d.ts` files rather than relying on memory of v3 APIs.
 - **Expected failures are typed errors; bugs throw.** A Balance Discrepancy or an uncertain classification is normal output, not an error.
 - **Money is integer cents through `Money`.** No floating point on amounts, no `toFixed`, no display formatting outside the core `Money` formatter. Postgres stores amounts as `bigint`.
 - **Calendar dates are `Temporal.PlainDate`.** No `Date` in domain code; `Date`/`Instant` only for technical timestamps such as `created_at`.

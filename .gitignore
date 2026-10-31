@@ -36,3 +36,10 @@ pgdata/
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Build output
+.output/
+.nitro/
+.tanstack/
+test-results/
+playwright-report/

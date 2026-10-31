@@ -1,0 +1,28 @@
+{
+  "name": "ballast",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint --type-aware",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "test:integration": "pnpm --filter @ballast/web test:integration",
+    "test:e2e": "pnpm --filter @ballast/web test:e2e",
+    "dev": "pnpm --filter @ballast/web dev",
+    "db:migrate": "pnpm --filter @ballast/web db:migrate"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2",
+    "oxlint": "1.90.0",
+    "oxlint-tsgolint": "7.0.2005",
+    "prettier": "^3.9.10",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

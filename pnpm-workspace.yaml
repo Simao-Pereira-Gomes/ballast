@@ -1,0 +1,15 @@
+packages:
+  - packages/*
+  - apps/*
+minimumReleaseAgeExclude:
+  - effect@4.1.1
+  - "@effect/vitest@4.1.1"
+  - "@effect/platform-node-shared@4.1.1"
+  - "@effect/platform-node@4.1.1"
+  - "@effect/sql-pg@4.1.1"
+
+# Optional native add-ons from Testcontainers' Docker client; not needed.
+allowBuilds:
+  cpu-features: false
+  protobufjs: false
+  ssh2: false

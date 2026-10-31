@@ -19,5 +19,5 @@ Ballast is a single TanStack Start (React) app on Node LTS, in a pnpm workspace 
 - Calendar dates are `Temporal.PlainDate` (native in Node) and Postgres `date`. JavaScript `Date` is only for technical timestamps.
 - UI: Tailwind v4, shadcn/ui, TanStack Table, Recharts.
 - Tests: Vitest, `fast-check` for Money and Ledger Ingest invariants, Testcontainers Postgres for integration tests, Playwright for the smoke test.
-- Code quality: typescript-eslint `strict-type-checked` with Prettier; `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `verbatimModuleSyntax`.
+- Code quality: TypeScript 7 (native) with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `verbatimModuleSyntax`, plus Prettier. Linting is oxlint with `oxlint-tsgolint`, whose type-aware rules run on typescript-go, so they see the same types as `tsc`. We rejected typescript-eslint because it supports only TypeScript below 6.1, and Biome because its type-aware rules (`noFloatingPromises`, `useExhaustiveSwitchCases`, the `noUnsafe*` family) were still experimental (Nursery) in 2.6 and approximate types instead of using the compiler.
 - Owner scoping is enforced in application code, plus composite `(owner_id, …)` foreign keys from the first migration. Postgres RLS waits until authentication and hosting are added.
