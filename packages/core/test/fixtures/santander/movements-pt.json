@@ -1,0 +1,38 @@
+{
+  "sheetName": "Saldos e movimentos",
+  "rows": [
+    ["Quinta-feira, 1 de Outubro de 2026", null, null, null, null],
+    ["MARIA EXEMPLO SILVA", null, null, null, null],
+    [null, null, null, null, null],
+    ["Saldos e movimentos", null, null, null, null],
+    [null, null, null, null, null],
+    ["Listagem de Movimentos", null, null, null, null],
+    ["Data Operação", "Data valor", "Descrição", "Montante( EUR )", "Saldo Contabilístico( EUR )"],
+    ["30-09-2026", "30-09-2026", "Juros Credores", "0.03", "1004"],
+    ["29-09-2026", "29-09-2026", "Transferência para Conta Poupança", "-500", "1003.97"],
+    ["25-09-2026", "25-09-2026", "Trf. MB WAY para Rui Exemplo Costa", "-15", "1503.97"],
+    ["22-09-2026", "22-09-2026", "Reembolso Loja Exemplo", "19.99", "1518.97"],
+    ["18-09-2026", "21-09-2026", "Depósito de Cheque 00012345", "120", "1498.98"],
+    ["15-09-2026", "15-09-2026", "Imposto do Selo s/ Comissão", "-0.12", "1378.98"],
+    ["12-09-2026", "12-09-2026", "Compra Gasolineira A12b345c6", "-55.01", "1379.1"],
+    ["10-09-2026", "09-09-2026", "Débito Directo Seguro Exemplo", "-27.5", "1434.11"],
+    ["08-09-2026", "08-09-2026", "Compra Continente Bom Dia", "-37.85", "1461.61"],
+    ["08-09-2026", "08-09-2026", "Compra Padaria Central", "-1.2", "1499.46"],
+    ["08-09-2026", "08-09-2026", "Compra Padaria Central", "-1.2", "1500.66"],
+    [
+      "07-09-2026",
+      "07-09-2026",
+      "Transferência de Ordenado Empresa Exemplo Lda",
+      "1850",
+      "1501.86"
+    ],
+    ["05-09-2026", "05-09-2026", "Trf. MB WAY de Ana Teste Lopes", "40", "-348.14"],
+    ["04-09-2026", "04-09-2026", "Comissão de Descoberto", "-3.12", "-388.14"],
+    ["04-09-2026", "04-09-2026", "Renda Casa Exemplo", "-650", "-385.02"],
+    ["03-09-2026", "03-09-2026", "Levantamento Multibanco", "-60", "264.98"],
+    ["02-09-2026", "02-09-2026", "Pagamento de Serviços 21", "-48.9", "324.98"],
+    ["01-09-2026", "01-09-2026", "Trf. MB WAY para Rui Exemplo Costa", "-15", "373.88"],
+    ["01-09-2026", "01-09-2026", "Compra Pingo Doce Avenidas", "-23.47", "388.88"],
+    [null, null, null, null, null]
+  ]
+}
