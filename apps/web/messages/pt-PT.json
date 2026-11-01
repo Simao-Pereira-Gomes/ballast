@@ -50,5 +50,8 @@
   "role_liability_description": "Dívidas que tem, como cartões de crédito e empréstimos.",
   "filter_role": "{role} · {count}",
   "account_summary": "{role} · {currency}",
-  "language_name": "Português"
+  "language_name": "Português",
+  "settings": "Preferências",
+  "theme_description": "Seguir o dispositivo, ou usar sempre o tema claro ou escuro.",
+  "language_description": "O Ballast segue o idioma do browser até escolher um."
 }

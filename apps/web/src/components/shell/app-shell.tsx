@@ -1,18 +1,20 @@
 import { Link } from "@tanstack/react-router"
-import { Anchor } from "lucide-react"
+import { Anchor, Settings } from "lucide-react"
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
-import { LanguageSwitch } from "./language-switch.tsx"
 import { sections } from "./sections.ts"
 import type { Section, SectionBadges } from "./sections.ts"
-import { ThemeSwitch } from "./theme-switch.tsx"
 
 /**
  * Ballast's frame: a slim rail on tablet and desktop, a top bar and a bottom
  * tab bar on phones. Sections that aren't built yet are greyed and not links.
  */
 const noBadges: SectionBadges = {}
+
+/** How every link in the shell looks before its active styles. */
+const linkClassName =
+  "text-muted-foreground transition-colors outline-ring hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
 
 export function AppShell({
   badges = noBadges,
@@ -62,20 +64,17 @@ function Rail({ badges }: Readonly<{ badges: SectionBadges }>) {
           ))}
         </ul>
       </nav>
-      <div className="mt-auto space-y-2 px-3">
-        <div className="flex items-center justify-between gap-2">
-          <span aria-hidden className="text-xs font-medium text-muted-foreground">
-            {m.theme()}
-          </span>
-          <ThemeSwitch />
-        </div>
-        <div className="flex items-center justify-between gap-2">
-          <span aria-hidden className="text-xs font-medium text-muted-foreground">
-            {m.language()}
-          </span>
-          <LanguageSwitch />
-        </div>
-      </div>
+      <Link
+        to="/settings"
+        className={cn(
+          "mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium",
+          linkClassName,
+          "data-[status=active]:bg-card data-[status=active]:font-semibold data-[status=active]:text-primary data-[status=active]:shadow-sm",
+        )}
+      >
+        <Settings className="size-5" aria-hidden />
+        {m.settings()}
+      </Link>
     </aside>
   )
 }
@@ -84,10 +83,17 @@ function PhoneTopBar() {
   return (
     <header className="flex items-center justify-between gap-4 px-5 pt-4 md:hidden">
       <Mark />
-      <div className="flex items-center gap-2">
-        <LanguageSwitch />
-        <ThemeSwitch />
-      </div>
+      <Link
+        to="/settings"
+        aria-label={m.settings()}
+        className={cn(
+          "-mr-2 grid size-11 place-items-center rounded-full",
+          linkClassName,
+          "data-[status=active]:text-primary",
+        )}
+      >
+        <Settings className="size-5" aria-hidden />
+      </Link>
     </header>
   )
 }
@@ -164,11 +170,7 @@ function SectionItem({
     <Link
       to={section.to}
       activeOptions={{ exact: true }}
-      className={cn(
-        className,
-        "text-muted-foreground transition-colors outline-ring hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2",
-        activeClassName,
-      )}
+      className={cn(className, linkClassName, activeClassName)}
     >
       {children}
       {badgeElement}

@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test"
 test("the Owner switches theme and the choice is remembered", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" })
   await page.goto("/")
+  await page.getByRole("link", { name: "Settings" }).click()
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
   const html = page.locator("html")
   const theme = page.getByRole("group", { name: "Theme" })
   await expect(theme.getByRole("radio", { name: "System" })).toBeChecked()

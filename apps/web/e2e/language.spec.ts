@@ -31,23 +31,24 @@ test.describe("in a pt-PT browser", () => {
 })
 
 test("the Owner switches language and the choice is remembered", async ({ page }) => {
-  await page.goto("/")
-  await expect(page.getByRole("heading", { name: "Accounts", level: 1 })).toBeVisible()
+  await page.goto("/settings")
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
 
   await page
     .getByRole("group", { name: "Language" })
     .getByRole("radio", { name: "Português" })
     .click()
-  await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Preferências", level: 1 })).toBeVisible()
   await expect(page.locator("html")).toHaveAttribute("lang", "pt-PT")
 
-  await page.reload()
+  await page.goto("/")
   await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+
+  await page.getByRole("link", { name: "Preferências" }).click()
   const language = page.getByRole("group", { name: "Idioma" })
   await expect(language.getByRole("radio", { name: "Português" })).toBeChecked()
-
   await language.getByRole("radio", { name: "English" }).click()
-  await expect(page.getByRole("heading", { name: "Accounts", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
 })
 
 test("the chosen language wins over the browser's on the server too", async ({ request }) => {
@@ -64,14 +65,14 @@ test("switching language keeps the theme and hydrates cleanly", async ({ page })
   const errors: string[] = []
   page.on("pageerror", (error) => errors.push(error.message))
   await page.emulateMedia({ colorScheme: "light" })
-  await page.goto("/")
+  await page.goto("/settings")
   await page.getByRole("group", { name: "Theme" }).getByRole("radio", { name: "Dark" }).check()
 
   await page
     .getByRole("group", { name: "Language" })
     .getByRole("radio", { name: "Português" })
     .click()
-  await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+  await expect(page.getByRole("heading", { name: "Preferências", level: 1 })).toBeVisible()
 
   await expect(page.locator("html")).toHaveClass(/dark/)
   await expect(
