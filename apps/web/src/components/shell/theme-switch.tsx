@@ -2,14 +2,15 @@ import { Monitor, Moon, Sun } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { useId } from "react"
 import { cn } from "@/lib/utils.ts"
+import { m } from "@/paraglide/messages.js"
 import { themePreferences } from "@/ui/theme.ts"
 import type { ThemePreference } from "@/ui/theme.ts"
 import { useThemePreference } from "./use-theme-preference.ts"
 
-const options: Record<ThemePreference, { label: string; icon: LucideIcon }> = {
-  system: { label: "System", icon: Monitor },
-  light: { label: "Light", icon: Sun },
-  dark: { label: "Dark", icon: Moon },
+const options: Record<ThemePreference, { label: () => string; icon: LucideIcon }> = {
+  system: { label: m.theme_system, icon: Monitor },
+  light: { label: m.theme_light, icon: Sun },
+  dark: { label: m.theme_dark, icon: Moon },
 }
 
 /** System / Light / Dark, as a segmented control of icon radio buttons. */
@@ -19,10 +20,11 @@ export function ThemeSwitch({ className }: Readonly<{ className?: string }>) {
 
   return (
     <fieldset className={cn("min-w-0", className)}>
-      <legend className="sr-only">Theme</legend>
+      <legend className="sr-only">{m.theme()}</legend>
       <div className="flex rounded-full bg-secondary p-1">
         {themePreferences.map((value) => {
-          const { label, icon: Icon } = options[value]
+          const { icon: Icon } = options[value]
+          const label = options[value].label()
           return (
             <label
               key={value}

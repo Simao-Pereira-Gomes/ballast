@@ -1,20 +1,25 @@
-import { accountRoles } from "@ballast/core"
 import type { AccountRole } from "@ballast/core"
+import { m } from "@/paraglide/messages.js"
 
-export const accountRoleLabels: Record<AccountRole, string> = {
-  operating_cash: "Operating Cash",
-  reserve: "Reserve",
-  investment: "Investment",
-  liability: "Liability",
+const labels: Record<AccountRole, () => string> = {
+  operating_cash: m.role_operating_cash,
+  reserve: m.role_reserve,
+  investment: m.role_investment,
+  liability: m.role_liability,
 }
 
-/** One line on what each role is for, shown when the Owner picks one. */
-export const accountRoleDescriptions: Record<AccountRole, string> = {
-  operating_cash: "Day-to-day money for bills and other Expenses.",
-  reserve: "Your safety reserve. Counts towards the Reserve Target.",
-  investment: "Money invested for the long term.",
-  liability: "Debt you owe, such as cards and loans.",
+const descriptions: Record<AccountRole, () => string> = {
+  operating_cash: m.role_operating_cash_description,
+  reserve: m.role_reserve_description,
+  investment: m.role_investment_description,
+  liability: m.role_liability_description,
 }
+
+/** The role's name in the interface language (CONTEXT.md terms). */
+export const accountRoleLabel = (role: AccountRole): string => labels[role]()
+
+/** One line on what the role is for, shown when the Owner picks one. */
+export const accountRoleDescription = (role: AccountRole): string => descriptions[role]()
 
 /** The role colour token as a background, for dots. Always shown next to the role name. */
 export const accountRoleDot: Record<AccountRole, string> = {
@@ -23,10 +28,3 @@ export const accountRoleDot: Record<AccountRole, string> = {
   investment: "bg-role-investment",
   liability: "bg-role-liability",
 }
-
-/** Account Roles in the order a form offers them. */
-export const accountRoleOptions = accountRoles.map((role) => ({
-  value: role,
-  label: accountRoleLabels[role],
-  description: accountRoleDescriptions[role],
-}))

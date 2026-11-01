@@ -1,0 +1,51 @@
+import { expect, test } from "@playwright/test"
+
+test("the server renders Portuguese for a Portuguese browser, Brazilian included", async ({
+  request,
+}) => {
+  const response = await request.get("/", { headers: { "Accept-Language": "pt-BR,pt;q=0.9" } })
+  const html = await response.text()
+  expect(html).toContain('<html lang="pt-PT"')
+  expect(html).toContain(">Contas</h1>")
+})
+
+test.describe("in a pt-PT browser", () => {
+  test.use({ locale: "pt-PT" })
+
+  test("Ballast opens in Portuguese", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.locator("html")).toHaveAttribute("lang", "pt-PT")
+    await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+    await expect(page.getByRole("navigation", { name: "Secções" })).toBeVisible()
+  })
+
+  test("the Owner is told what to fix in Portuguese", async ({ page }) => {
+    await page.goto("/")
+    await page.getByRole("button", { name: "Abrir conta" }).click()
+    const dialog = page.getByRole("dialog", { name: "Abrir uma conta" })
+    await dialog.getByRole("button", { name: "Abrir conta" }).click()
+
+    await expect(dialog.getByText("O nome é obrigatório")).toBeVisible()
+    await expect(dialog.getByText("Escolha a função da conta")).toBeVisible()
+  })
+})
+
+test("the Owner switches language and the choice is remembered", async ({ page }) => {
+  await page.goto("/")
+  await expect(page.getByRole("heading", { name: "Accounts", level: 1 })).toBeVisible()
+
+  await page
+    .getByRole("group", { name: "Language" })
+    .getByRole("radio", { name: "Português" })
+    .click()
+  await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+  await expect(page.locator("html")).toHaveAttribute("lang", "pt-PT")
+
+  await page.reload()
+  await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
+  const language = page.getByRole("group", { name: "Idioma" })
+  await expect(language.getByRole("radio", { name: "Português" })).toBeChecked()
+
+  await language.getByRole("radio", { name: "English" }).click()
+  await expect(page.getByRole("heading", { name: "Accounts", level: 1 })).toBeVisible()
+})

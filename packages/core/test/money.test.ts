@@ -49,22 +49,39 @@ describe("Money", () => {
     // and between thousands, and no grouping below 10 000.
     const nbsp = "\u00a0"
 
-    it("formats small amounts with comma decimals", () => {
-      expect(Money.format(Money.eur(5n))).toBe(`0,05${nbsp}€`)
+    describe("in pt-PT", () => {
+      it("formats small amounts with comma decimals", () => {
+        expect(Money.format(Money.eur(5n), "pt-PT")).toBe(`0,05${nbsp}€`)
+      })
+
+      it("does not group four-digit amounts", () => {
+        expect(Money.format(Money.eur(123456n), "pt-PT")).toBe(`1234,56${nbsp}€`)
+      })
+
+      it("groups thousands from five digits and keeps the sign", () => {
+        expect(Money.format(Money.eur(-1234567n), "pt-PT")).toBe(`-12${nbsp}345,67${nbsp}€`)
+      })
+
+      it("formats amounts beyond floating-point precision exactly", () => {
+        expect(Money.format(Money.eur(900719925474099123n), "pt-PT")).toBe(
+          `9${nbsp}007${nbsp}199${nbsp}254${nbsp}740${nbsp}991,23${nbsp}€`,
+        )
+      })
     })
 
-    it("does not group four-digit amounts", () => {
-      expect(Money.format(Money.eur(123456n))).toBe(`1234,56${nbsp}€`)
-    })
+    describe("in English", () => {
+      it("puts the symbol first with point decimals", () => {
+        expect(Money.format(Money.eur(5n), "en")).toBe("€0.05")
+      })
 
-    it("groups thousands from five digits and keeps the sign", () => {
-      expect(Money.format(Money.eur(-1234567n))).toBe(`-12${nbsp}345,67${nbsp}€`)
-    })
+      it("groups thousands with commas and keeps the sign", () => {
+        expect(Money.format(Money.eur(-1234567n), "en")).toBe("-€12,345.67")
+        expect(Money.format(Money.eur(123456n), "en")).toBe("€1,234.56")
+      })
 
-    it("formats amounts beyond floating-point precision exactly", () => {
-      expect(Money.format(Money.eur(900719925474099123n))).toBe(
-        `9${nbsp}007${nbsp}199${nbsp}254${nbsp}740${nbsp}991,23${nbsp}€`,
-      )
+      it("formats amounts beyond floating-point precision exactly", () => {
+        expect(Money.format(Money.eur(900719925474099123n), "en")).toBe("€9,007,199,254,740,991.23")
+      })
     })
   })
 })

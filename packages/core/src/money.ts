@@ -3,6 +3,8 @@
  * Floating point never touches an amount.
  */
 import { Order as O, Schema } from "effect"
+import { intlLocale } from "./locale.ts"
+import type { Locale } from "./locale.ts"
 
 /** Currencies Ballast handles. v1 supports EUR only. */
 export const Currency = Schema.Literals(["EUR"])
@@ -72,19 +74,27 @@ export const allocate = (money: Money, ratios: readonly number[]): Money[] => {
   return parts.map((cents) => ({ cents: cents * sign, currency: money.currency }))
 }
 
-const formatters: Record<Currency, Intl.NumberFormat> = {
-  EUR: new Intl.NumberFormat("pt-PT", { style: "currency", currency: "EUR" }),
+const formatters = new Map<string, Intl.NumberFormat>()
+
+const formatterFor = (currency: Currency, locale: Locale): Intl.NumberFormat => {
+  const key = `${currency}:${locale}`
+  let formatter = formatters.get(key)
+  if (formatter === undefined) {
+    formatter = new Intl.NumberFormat(intlLocale[locale], { style: "currency", currency })
+    formatters.set(key, formatter)
+  }
+  return formatter
 }
 
 /**
- * Formats an amount for display in Portuguese, e.g. "1234,56 €" or
- * "-12 345,67 €". The amount is passed to Intl as an exact decimal string,
- * so it never goes through a float.
+ * Formats an amount for display in the interface language, e.g.
+ * "-12 345,67 €" (pt-PT) or "-€12,345.67" (en). The amount is passed to Intl
+ * as an exact decimal string, so it never goes through a float.
  */
-export const format = (money: Money): string => {
+export const format = (money: Money, locale: Locale): string => {
   const negative = money.cents < 0n
   const digits = (negative ? -money.cents : money.cents).toString().padStart(3, "0")
   const decimal = `${negative ? "-" : ""}${digits.slice(0, -2)}.${digits.slice(-2)}`
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- built from a bigint's digits, so always a valid numeric literal
-  return formatters[money.currency].format(decimal as Intl.StringNumericLiteral)
+  return formatterFor(money.currency, locale).format(decimal as Intl.StringNumericLiteral)
 }

@@ -34,9 +34,9 @@ layer(TestDatabase)("Accounts", (it) => {
 
       assert(error._tag === "InvalidAccount")
       expect(error.problems).toEqual([
-        { field: "name", message: "Name is required" },
-        { field: "role", message: "Choose an Account Role" },
-        { field: "currency", message: "Only EUR is supported" },
+        { field: "name", problem: "required" },
+        { field: "role", problem: "required" },
+        { field: "currency", problem: "unsupported" },
       ])
       expect(yield* listAccounts(owner)).toEqual([])
     }),

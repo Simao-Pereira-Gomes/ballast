@@ -1,8 +1,12 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { AppShell } from "../components/shell/app-shell.tsx"
+import { registerLanguageStrategies } from "../i18n.ts"
+import { getLocale } from "../paraglide/runtime.js"
 import appCss from "../styles.css?url"
 import { themeBootScript } from "../ui/theme.ts"
+
+registerLanguageStrategies()
 
 export const Route = createRootRoute({
   head: () => ({
@@ -31,7 +35,7 @@ function RootComponent() {
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
     // The boot script sets the theme class before React hydrates.
-    <html lang="en" suppressHydrationWarning>
+    <html lang={getLocale()} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

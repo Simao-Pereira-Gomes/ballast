@@ -2,6 +2,7 @@ import type { Account } from "@ballast/core"
 import { Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button.tsx"
+import { m } from "@/paraglide/messages.js"
 import { AccountList } from "./account-list.tsx"
 import { EmptyAccounts } from "./empty-accounts.tsx"
 import { OpenAccountDialog } from "./open-account-dialog.tsx"
@@ -38,14 +39,14 @@ export function AccountsPage({
     <main className="mx-auto w-full max-w-5xl px-5 pt-6 pb-40 md:px-10 md:pt-10 md:pb-12">
       <div className="flex items-end justify-between gap-4">
         <h1 ref={heading} tabIndex={-1} className="text-title outline-none">
-          Accounts
+          {m.accounts_title()}
         </h1>
         <Button
           className="hidden h-12 rounded-2xl px-5 text-base font-semibold shadow-sm md:inline-flex"
           onClick={startOpening}
         >
           <Plus aria-hidden />
-          Open Account
+          {m.open_account()}
         </Button>
       </div>
 
@@ -56,7 +57,7 @@ export function AccountsPage({
       )}
 
       <Button
-        aria-label="Open Account"
+        aria-label={m.open_account()}
         className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 size-14 rounded-full shadow-lg md:hidden [&_svg:not([class*='size-'])]:size-7"
         onClick={startOpening}
       >

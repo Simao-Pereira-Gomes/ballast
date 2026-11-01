@@ -1,9 +1,11 @@
+import { accountRoles } from "@ballast/core"
 import type { Account } from "@ballast/core"
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { accountsWithRole, countByRole } from "@/ui/account-filter.ts"
 import type { RoleFilter } from "@/ui/account-filter.ts"
-import { accountRoleLabels, accountRoleOptions } from "@/ui/account-role.ts"
+import { m } from "@/paraglide/messages.js"
+import { accountRoleLabel } from "@/ui/account-role.ts"
 import { RoleDot } from "./role-dot.tsx"
 
 export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[] }>) {
@@ -14,35 +16,35 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
   return (
     <section aria-labelledby="accounts-heading">
       <h2 id="accounts-heading" className="sr-only">
-        Your Accounts
+        {m.your_accounts()}
       </h2>
 
       <fieldset className="-mx-5 mt-6 flex min-w-0 gap-2 overflow-x-auto px-5 pb-1 md:mx-0 md:flex-wrap md:px-0">
-        <legend className="sr-only">Filter by Account Role</legend>
+        <legend className="sr-only">{m.filter_by_role()}</legend>
         <Chip
           pressed={filter === "all"}
           onPress={() => {
             setFilter("all")
           }}
         >
-          All · {accounts.length}
+          {m.filter_all({ count: accounts.length })}
         </Chip>
-        {accountRoleOptions.map((option) => (
+        {accountRoles.map((role) => (
           <Chip
-            key={option.value}
-            pressed={filter === option.value}
+            key={role}
+            pressed={filter === role}
             onPress={() => {
-              setFilter(option.value)
+              setFilter(role)
             }}
           >
-            <RoleDot role={option.value} className="size-2" />
-            {option.label} · {counts[option.value]}
+            <RoleDot role={role} className="size-2" />
+            {m.filter_role({ role: accountRoleLabel(role), count: counts[role] })}
           </Chip>
         ))}
       </fieldset>
 
       {shown.length === 0 ? (
-        <p className="py-10 text-center text-muted-foreground">No Accounts with this role yet.</p>
+        <p className="py-10 text-center text-muted-foreground">{m.no_accounts_with_role()}</p>
       ) : (
         <ul className="mt-6 grid gap-3 lg:grid-cols-2">
           {shown.map((account) => (
@@ -54,7 +56,10 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-semibold">{account.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {accountRoleLabels[account.role]} · {account.currency}
+                  {m.account_summary({
+                    role: accountRoleLabel(account.role),
+                    currency: account.currency,
+                  })}
                 </p>
               </div>
             </li>

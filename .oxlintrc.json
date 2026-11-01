@@ -11,7 +11,7 @@
     "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   },
-  "ignorePatterns": ["**/routeTree.gen.ts", "**/.output/**", "**/dist/**"],
+  "ignorePatterns": ["**/routeTree.gen.ts", "**/.output/**", "**/dist/**", "**/src/paraglide/**"],
   "rules": {
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
