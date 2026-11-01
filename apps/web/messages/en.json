@@ -22,7 +22,7 @@
   "open_account": "Open Account",
   "your_accounts": "Your Accounts",
   "filter_by_role": "Filter by Account Role",
-  "filter_all": "All",
+  "filter_all": "All · {count}",
   "no_accounts_with_role": "No Accounts with this role yet.",
   "empty_title": "Start with your current account",
   "empty_body": "Ballast needs to know where your money lives. Add each Account and say what it's for.",
@@ -47,5 +47,8 @@
   "role_operating_cash_description": "Day-to-day money for bills and other Expenses.",
   "role_reserve_description": "Your safety reserve. Counts towards the Reserve Target.",
   "role_investment_description": "Money invested for the long term.",
-  "role_liability_description": "Debt you owe, such as cards and loans."
+  "role_liability_description": "Debt you owe, such as cards and loans.",
+  "filter_role": "{role} · {count}",
+  "account_summary": "{role} · {currency}",
+  "language_name": "English"
 }

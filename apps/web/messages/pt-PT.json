@@ -22,7 +22,7 @@
   "open_account": "Abrir conta",
   "your_accounts": "As suas contas",
   "filter_by_role": "Filtrar por função da conta",
-  "filter_all": "Todas",
+  "filter_all": "Todas · {count}",
   "no_accounts_with_role": "Ainda não há contas com esta função.",
   "empty_title": "Comece pela sua conta à ordem",
   "empty_body": "O Ballast precisa de saber onde está o seu dinheiro. Adicione cada conta e indique para que serve.",
@@ -47,5 +47,8 @@
   "role_operating_cash_description": "Dinheiro do dia a dia para pagamentos e outras despesas.",
   "role_reserve_description": "A sua reserva de segurança. Entra no objetivo de reserva.",
   "role_investment_description": "Dinheiro investido a longo prazo.",
-  "role_liability_description": "Dívidas que tem, como cartões de crédito e empréstimos."
+  "role_liability_description": "Dívidas que tem, como cartões de crédito e empréstimos.",
+  "filter_role": "{role} · {count}",
+  "account_summary": "{role} · {currency}",
+  "language_name": "Português"
 }

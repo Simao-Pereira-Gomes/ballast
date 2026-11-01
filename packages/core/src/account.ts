@@ -5,6 +5,7 @@ import type { OwnerId } from "./owner.ts"
 export const AccountId = Schema.String.check(Schema.isUUID()).pipe(Schema.brand("AccountId"))
 export type AccountId = typeof AccountId.Type
 
+/** What an Account's money is for. Advice depends on it. */
 export const AccountRole = Schema.Literals(["operating_cash", "reserve", "investment", "liability"])
 export type AccountRole = typeof AccountRole.Type
 

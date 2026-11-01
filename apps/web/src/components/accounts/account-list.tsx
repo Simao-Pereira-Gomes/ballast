@@ -1,10 +1,11 @@
+import { accountRoles } from "@ballast/core"
 import type { Account } from "@ballast/core"
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { accountsWithRole, countByRole } from "@/ui/account-filter.ts"
 import type { RoleFilter } from "@/ui/account-filter.ts"
 import { m } from "@/paraglide/messages.js"
-import { accountRoleLabel, accountRoles } from "@/ui/account-role.ts"
+import { accountRoleLabel } from "@/ui/account-role.ts"
 import { RoleDot } from "./role-dot.tsx"
 
 export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[] }>) {
@@ -26,7 +27,7 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
             setFilter("all")
           }}
         >
-          {m.filter_all()} · {accounts.length}
+          {m.filter_all({ count: accounts.length })}
         </Chip>
         {accountRoles.map((role) => (
           <Chip
@@ -37,7 +38,7 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
             }}
           >
             <RoleDot role={role} className="size-2" />
-            {accountRoleLabel(role)} · {counts[role]}
+            {m.filter_role({ role: accountRoleLabel(role), count: counts[role] })}
           </Chip>
         ))}
       </fieldset>
@@ -55,7 +56,10 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-semibold">{account.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {accountRoleLabel(account.role)} · {account.currency}
+                  {m.account_summary({
+                    role: accountRoleLabel(account.role),
+                    currency: account.currency,
+                  })}
                 </p>
               </div>
             </li>

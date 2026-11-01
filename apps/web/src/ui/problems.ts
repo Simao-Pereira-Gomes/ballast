@@ -8,14 +8,14 @@ type CodesFor<Field extends AccountProblem["field"]> = Extract<
 
 // One table per field, so a new field or code fails to compile until it has a message.
 const name: Record<CodesFor<"name">, () => string> = {
-  required: () => m.problem_name_required(),
-  too_long: () => m.problem_name_too_long(),
+  required: m.problem_name_required,
+  too_long: m.problem_name_too_long,
 }
 const role: Record<CodesFor<"role">, () => string> = {
-  required: () => m.problem_role_required(),
+  required: m.problem_role_required,
 }
 const currency: Record<CodesFor<"currency">, () => string> = {
-  unsupported: () => m.problem_currency_unsupported(),
+  unsupported: m.problem_currency_unsupported,
 }
 
 /** The message for a problem code from the core, in the interface language (ADR 0006). */

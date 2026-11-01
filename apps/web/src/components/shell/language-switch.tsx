@@ -1,14 +1,15 @@
+import { locales } from "@ballast/core"
+import type { Locale } from "@ballast/core"
 import { useId } from "react"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
-import { getLocale, locales, setLocale } from "@/paraglide/runtime.js"
-import type { Locale } from "@/paraglide/runtime.js"
+import { getLocale, setLocale } from "@/paraglide/runtime.js"
 
 /** Each language named in itself, so the Owner can find theirs whatever is showing. */
-const languages: Record<Locale, { short: string; name: string }> = {
-  en: { short: "EN", name: "English" },
-  "pt-PT": { short: "PT", name: "Português" },
-}
+const nameOf = (locale: Locale): string => m.language_name({}, { locale })
+
+/** The short form shown on the switch: "EN", "PT". */
+const shortOf = (locale: Locale): string => (locale.split("-")[0] ?? locale).toUpperCase()
 
 /**
  * English / Português. Choosing one sets the language cookie and reloads,
@@ -26,7 +27,7 @@ export function LanguageSwitch({ className }: Readonly<{ className?: string }>) 
           <label
             key={locale}
             lang={locale}
-            title={languages[locale].name}
+            title={nameOf(locale)}
             className={cn(
               "relative flex flex-1 cursor-pointer items-center justify-center rounded-full px-2.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors",
               "has-checked:bg-card has-checked:text-foreground has-checked:shadow-sm",
@@ -43,8 +44,8 @@ export function LanguageSwitch({ className }: Readonly<{ className?: string }>) 
               }}
               className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
             />
-            <span aria-hidden>{languages[locale].short}</span>
-            <span className="sr-only">{languages[locale].name}</span>
+            <span aria-hidden>{shortOf(locale)}</span>
+            <span className="sr-only">{nameOf(locale)}</span>
           </label>
         ))}
       </div>

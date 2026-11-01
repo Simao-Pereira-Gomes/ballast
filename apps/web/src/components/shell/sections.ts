@@ -16,33 +16,33 @@ export type SectionKey = "accounts" | "transactions" | "review" | "forecast" | "
 export const sections: readonly Section[] = [
   {
     key: "accounts",
-    label: () => m.section_accounts(),
-    shortLabel: () => m.section_accounts_short(),
+    label: m.section_accounts,
+    shortLabel: m.section_accounts_short,
     icon: Wallet,
     to: "/",
   },
   {
     key: "transactions",
-    label: () => m.section_transactions(),
-    shortLabel: () => m.section_transactions_short(),
+    label: m.section_transactions,
+    shortLabel: m.section_transactions_short,
     icon: ArrowLeftRight,
   },
   {
     key: "review",
-    label: () => m.section_review(),
-    shortLabel: () => m.section_review_short(),
+    label: m.section_review,
+    shortLabel: m.section_review_short,
     icon: Inbox,
   },
   {
     key: "forecast",
-    label: () => m.section_forecast(),
-    shortLabel: () => m.section_forecast_short(),
+    label: m.section_forecast,
+    shortLabel: m.section_forecast_short,
     icon: TrendingUp,
   },
   {
     key: "allocation",
-    label: () => m.section_allocation(),
-    shortLabel: () => m.section_allocation_short(),
+    label: m.section_allocation,
+    shortLabel: m.section_allocation_short,
     icon: PieChart,
   },
 ]
