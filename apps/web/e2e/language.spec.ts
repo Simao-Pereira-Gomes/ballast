@@ -80,33 +80,3 @@ test("switching language keeps the theme and hydrates cleanly", async ({ page })
   ).toBeChecked()
   expect(errors).toEqual([])
 })
-
-test("the chosen language wins over the browser's on the server too", async ({ request }) => {
-  const html = await (
-    await request.get("/", {
-      headers: { "Accept-Language": "en-US,en;q=0.9", Cookie: "PARAGLIDE_LOCALE=pt-PT" },
-    })
-  ).text()
-  expect(html).toContain('<html lang="pt-PT"')
-  expect(html).toContain(">Contas</h1>")
-})
-
-test("switching language keeps the theme and hydrates cleanly", async ({ page }) => {
-  const errors: string[] = []
-  page.on("pageerror", (error) => errors.push(error.message))
-  await page.emulateMedia({ colorScheme: "light" })
-  await page.goto("/")
-  await page.getByRole("group", { name: "Theme" }).getByRole("radio", { name: "Dark" }).check()
-
-  await page
-    .getByRole("group", { name: "Language" })
-    .getByRole("radio", { name: "Português" })
-    .click()
-  await expect(page.getByRole("heading", { name: "Contas", level: 1 })).toBeVisible()
-
-  await expect(page.locator("html")).toHaveClass(/dark/)
-  await expect(
-    page.getByRole("group", { name: "Tema" }).getByRole("radio", { name: "Escuro" }),
-  ).toBeChecked()
-  expect(errors).toEqual([])
-})
