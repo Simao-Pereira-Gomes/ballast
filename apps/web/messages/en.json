@@ -50,5 +50,8 @@
   "role_liability_description": "Debt you owe, such as cards and loans.",
   "filter_role": "{role} · {count}",
   "account_summary": "{role} · {currency}",
-  "language_name": "English"
+  "language_name": "English",
+  "settings": "Settings",
+  "theme_description": "Follow your device, or always use light or dark.",
+  "language_description": "Ballast follows your browser's language until you choose one."
 }

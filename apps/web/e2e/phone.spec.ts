@@ -46,3 +46,16 @@ test("at phone width the tab bar, floating button and sheet are usable", async (
   await expect(sheet).toBeHidden()
   await expect(openButton).toBeFocused()
 })
+
+test("at phone width Settings opens from the top bar and fits", async ({ page }) => {
+  await page.goto("/")
+  await page.getByRole("link", { name: "Settings" }).click()
+  await expect(page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible()
+
+  const hasHorizontalScroll = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  )
+  expect(hasHorizontalScroll).toBe(false)
+  await expect(page.getByRole("radio", { name: "Dark" })).toBeVisible()
+  await expect(page.getByRole("radio", { name: "Português" })).toBeVisible()
+})
