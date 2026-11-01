@@ -48,3 +48,5 @@ playwright-report/
 apps/web/src/paraglide/
 apps/web/project.inlang/cache/
 apps/web/project.inlang/README.md
+apps/web/project.inlang/.lix/
+apps/web/project.inlang/.meta.json
