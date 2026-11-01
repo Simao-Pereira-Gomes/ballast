@@ -3,6 +3,11 @@
 ## Git
 
 - **No co-author trailers.** Do not add `Co-Authored-By:` (or any other attribution trailer) to commit messages unless the repository owner explicitly asks for it in that request.
+- **Semantic commit messages ([Conventional Commits](https://www.conventionalcommits.org/)).** Write the subject as `<type>(<scope>): <summary>`, with the scope optional. The summary is imperative, lower case, has no trailing full stop and stays under about 72 characters, e.g. `feat(core): parse Santander statement lines`.
+  - **Types:** `feat` (behaviour the Owner can see), `fix` (a bug), `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`.
+  - **Scopes:** `core`, `web`, `db` or `deps`, or leave the scope out when the change spans several.
+  - **Breaking changes:** mark them with `!` after the type or scope, plus a `BREAKING CHANGE:` footer.
+  - **PR titles too:** PRs are squash-merged, so the PR title becomes the commit on `main` and must follow the same format.
 - **One short-lived branch per ticket, merged into `main` by PR.** Branch from an up-to-date `main` and name the branch `<issue-number>-<slug>` (e.g. `2-walking-skeleton`). Open a PR whose description says `Closes #<n>`, merge once CI passes, then delete the branch. Never commit directly to `main`, and don't create long-lived release branches: `main` must always work. Release points are tags (e.g. `v1.0.0`) and GitHub milestones.
 
 ## GitHub
