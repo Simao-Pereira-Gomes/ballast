@@ -5,9 +5,12 @@ import { useState } from "react"
 import type { ReactNode } from "react"
 import { accountsWithRole, countByRole } from "@/ui/account-filter.ts"
 import type { RoleFilter } from "@/ui/account-filter.ts"
+import { ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleLabel } from "@/ui/account-role.ts"
 import { formatMoney } from "@/ui/format.ts"
+import { AccountSummaryLine } from "./account-summary-line.tsx"
 import { RoleDot } from "./role-dot.tsx"
 
 export function AccountList({ accounts }: Readonly<{ accounts: readonly AccountSummary[] }>) {
@@ -48,33 +51,67 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly AccountS
       {shown.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">{m.no_accounts_with_role()}</p>
       ) : (
-        <ul className="mt-6 grid gap-3 lg:grid-cols-2">
-          {shown.map((account) => (
-            <li key={account.id}>
-              <Link
-                to="/accounts/$accountId"
-                params={{ accountId: account.id }}
-                className="flex items-center gap-4 rounded-2xl bg-card p-4 text-card-foreground shadow-sm transition-colors outline-ring hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2"
-              >
-                <RoleDot role={account.role} className="size-3" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-lg font-semibold">{account.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {m.account_summary({
-                      role: accountRoleLabel(account.role),
-                      currency: account.currency,
-                    })}
-                  </p>
-                </div>
-                <p className="shrink-0 text-lg font-semibold tabular-nums">
-                  {formatMoney(account.balance)}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <AccountCards accounts={shown} />
       )}
     </section>
+  )
+}
+
+/**
+ * The archived Accounts, behind a toggle that says how many there are. They
+ * keep their history and can be opened like any other Account.
+ */
+export function ArchivedAccounts({ accounts }: Readonly<{ accounts: readonly AccountSummary[] }>) {
+  const [shown, setShown] = useState(false)
+  return (
+    <section aria-label={m.archived_accounts()} className="mt-10">
+      <button
+        type="button"
+        aria-expanded={shown}
+        aria-controls="archived-accounts"
+        onClick={() => {
+          setShown(!shown)
+        }}
+        className="flex items-center gap-2 rounded-lg text-sm font-medium text-muted-foreground outline-ring hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+      >
+        <ChevronRight
+          aria-hidden
+          className={cn("size-4 transition-transform", shown && "rotate-90")}
+        />
+        {m.show_archived_accounts({ count: accounts.length })}
+      </button>
+      <div id="archived-accounts" hidden={!shown}>
+        <AccountCards accounts={accounts} />
+      </div>
+    </section>
+  )
+}
+
+function AccountCards({ accounts }: Readonly<{ accounts: readonly AccountSummary[] }>) {
+  return (
+    <ul className="mt-6 grid gap-3 lg:grid-cols-2">
+      {accounts.map((account) => (
+        <li key={account.id}>
+          <Link
+            to="/accounts/$accountId"
+            params={{ accountId: account.id }}
+            className={cn(
+              "flex items-center gap-4 rounded-2xl bg-card p-4 text-card-foreground shadow-sm transition-colors outline-ring hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2",
+              account.archived && "text-muted-foreground",
+            )}
+          >
+            <RoleDot role={account.role} className="size-3" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-lg font-semibold">{account.name}</p>
+              <AccountSummaryLine account={account} className="text-sm text-muted-foreground" />
+            </div>
+            <p className="shrink-0 text-lg font-semibold tabular-nums">
+              {formatMoney(account.balance)}
+            </p>
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }
 

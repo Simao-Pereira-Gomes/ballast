@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { AccountLedgerPage } from "../components/transactions/account-ledger-page.tsx"
+import { archiveAccount, changeAccount, unarchiveAccount } from "../server/functions/accounts.ts"
 import {
   addTransaction,
   deleteTransaction,
@@ -19,6 +20,9 @@ function AccountLedgerRoute() {
   const add = useServerFn(addTransaction)
   const edit = useServerFn(editTransaction)
   const remove = useServerFn(deleteTransaction)
+  const change = useServerFn(changeAccount)
+  const archive = useServerFn(archiveAccount)
+  const unarchive = useServerFn(unarchiveAccount)
 
   const refreshAfter = async <R extends { readonly ok: boolean; readonly reason?: string }>(
     result: R,
@@ -40,6 +44,17 @@ function AccountLedgerRoute() {
       onDelete={async (transaction) =>
         refreshAfter(await remove({ data: { transactionId: transaction.id } }))
       }
+      onChangeAccount={async ({ currency: _currency, ...changes }) =>
+        refreshAfter(await change({ data: { accountId: account.id, ...changes } }))
+      }
+      onArchive={async () => {
+        await archive({ data: { accountId: account.id } })
+        await router.invalidate()
+      }}
+      onUnarchive={async () => {
+        await unarchive({ data: { accountId: account.id } })
+        await router.invalidate()
+      }}
     />
   )
 }

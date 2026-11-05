@@ -21,6 +21,11 @@ A place where the Owner holds money: current account, savings account, credit ca
 _Avoid_: Wallet, pot
 _pt-PT_: **Conta** · _Evitar_: Carteira
 
+**Archived Account**:
+An Account the Owner has closed. It keeps its Transactions and history but is left out of active lists, the Allocation Status and Recommendations. It can be unarchived.
+_Avoid_: Deleted account, inactive account
+_pt-PT_: **Conta arquivada** · _Evitar_: Conta eliminada, Conta inativa
+
 **Transfer**:
 A pair of Transactions moving money between two of the Owner's own Accounts. A Transfer is never Revenue or Expense. Credit card bill payments and contributions to a brokerage are Transfers.
 _Avoid_: Internal movement, self-payment
@@ -131,10 +136,25 @@ Money held in Accounts exposed to market risk (brokerage, PPR, funds). Never cou
 _Avoid_: Portfolio (as a domain term), assets
 _pt-PT_: **Investimento** · _Evitar_: Carteira
 
+**Asset Class**:
+What Investment money is exposed to: equity, bonds, cash, crypto or other. An ETF or fund counts as the asset class it holds. Crypto is its own class because mainstream guidance treats it as speculative and outside the Target Allocation.
+_Avoid_: Asset type, instrument, product
+_pt-PT_: **Classe de ativos** · _Evitar_: Tipo de ativo, Produto
+
+**Asset Mix**:
+How an Investment Account splits across Asset Classes, in whole percentages adding up to 100 (e.g. 80% equity, 20% bonds). Compared with the Target Allocation.
+_Avoid_: Portfolio mix, breakdown
+_pt-PT_: **Composição por classe de ativos** · _Evitar_: Mix da carteira
+
 **Liability**:
 An Account representing money the Owner owes (credit card carrying a balance, personal loan, car loan, mortgage), with an interest rate.
 _Avoid_: Debt account, loan (as a generic term)
 _pt-PT_: **Dívida** · _Evitar_: Passivo, Crédito
+
+**Interest Rate**:
+The annual percentage rate (APR) charged on a Liability, stored in basis points. Compared with the Rule Set's threshold to find High-Interest Debt.
+_Avoid_: Interest, cost of debt
+_pt-PT_: **Taxa de juro anual (TAEG)** · _Evitar_: Juro, TAN
 
 **High-Interest Debt**:
 Liability balances whose interest rate exceeds the Rule Set's threshold. Liabilities below the threshold (e.g. a typical mortgage) are not paid down early; their payments are simply Essential Expenses.
