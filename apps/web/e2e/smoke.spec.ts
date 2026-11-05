@@ -124,3 +124,35 @@ test("the Owner adds, edits and deletes manual Transactions and sees the balance
   await page.getByRole("link", { name: "Accounts", exact: true }).first().click()
   await expect(accounts.getByRole("link", { name: /Santander Current/ })).toContainText("-€2.50")
 })
+
+test("the Owner is told when a Transaction was already deleted in another tab", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/")
+  await page
+    .getByRole("region", { name: "Your Accounts" })
+    .getByRole("link", { name: /Santander Current/ })
+    .click()
+  const ledger = page.getByRole("region", { name: "Transactions on this Account" })
+  const market = ledger.getByRole("button", { name: /Market, paid in cash/ })
+
+  const otherTab = await context.newPage()
+  await otherTab.goto(page.url())
+  await otherTab.getByRole("button", { name: /Market, paid in cash/ }).click()
+  await otherTab.getByRole("button", { name: "Delete" }).click()
+  await otherTab.getByRole("button", { name: "Delete for good" }).click()
+  await expect(otherTab.getByRole("button", { name: /Market, paid in cash/ })).toBeHidden()
+
+  await market.click()
+  const dialog = page.getByRole("dialog", { name: "Edit Transaction" })
+  await dialog.getByLabel("Amount").fill("4")
+  await dialog.getByRole("button", { name: "Save" }).click()
+
+  await expect(dialog).toBeHidden()
+  await expect(page.getByRole("status")).toHaveText(
+    "This Transaction had already been deleted, so there was nothing to change.",
+  )
+  await expect(market).toBeHidden()
+  await expect(page.getByRole("region", { name: "Balance" })).toContainText("€0.00")
+})

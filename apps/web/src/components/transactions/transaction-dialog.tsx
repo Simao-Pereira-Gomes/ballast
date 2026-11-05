@@ -26,8 +26,19 @@ export interface TransactionFormDetails {
   readonly description: string
 }
 
+/** A Transaction can vanish while its dialog is open, e.g. deleted in another tab. */
+type Gone = { readonly ok: false; readonly reason: "gone" }
+
 export type TransactionOutcome =
-  { readonly ok: true } | { readonly ok: false; readonly problems: readonly TransactionProblem[] }
+  | { readonly ok: true }
+  | {
+      readonly ok: false
+      readonly reason: "invalid"
+      readonly problems: readonly TransactionProblem[]
+    }
+  | Gone
+
+export type DeleteOutcome = { readonly ok: true } | Gone
 
 /** What the dialog is for: a new Transaction, or changing a manual one. */
 export type TransactionDialogMode =
@@ -48,6 +59,7 @@ export function TransactionDialog({
   onOpenChange,
   onSubmit,
   onDelete,
+  onGone,
   onCloseAutoFocus,
 }: Readonly<{
   open: boolean
@@ -55,7 +67,8 @@ export function TransactionDialog({
   mode: TransactionDialogMode
   onOpenChange: (open: boolean) => void
   onSubmit: (details: TransactionFormDetails) => Promise<TransactionOutcome>
-  onDelete: (transaction: Transaction) => Promise<void>
+  onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
+  onGone: () => void
   onCloseAutoFocus?: (event: Event) => void
 }>) {
   const editing = mode.kind === "edit"
@@ -81,7 +94,8 @@ export function TransactionDialog({
           mode={mode}
           onSubmit={onSubmit}
           onDelete={onDelete}
-          onDone={() => {
+          onDone={(gone) => {
+            if (gone) onGone()
             onOpenChange(false)
           }}
         />
@@ -106,8 +120,8 @@ function TransactionForm({
 }: Readonly<{
   mode: TransactionDialogMode
   onSubmit: (details: TransactionFormDetails) => Promise<TransactionOutcome>
-  onDelete: (transaction: Transaction) => Promise<void>
-  onDone: () => void
+  onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
+  onDone: (gone: boolean) => void
 }>) {
   const [problems, setProblems] = useState<readonly TransactionProblem[]>([])
   const [busy, setBusy] = useState<"saving" | "deleting" | undefined>()
@@ -139,12 +153,11 @@ function TransactionForm({
         direction: textField(fields, "direction"),
         description: textField(fields, "description"),
       })
-      if (outcome.ok) {
-        onDone()
+      if (outcome.ok || outcome.reason === "gone") {
+        onDone(!outcome.ok)
         return
       }
       setProblems(outcome.problems)
-      // Take the Owner to the first thing to fix, in form order.
       const invalid = new Set(outcome.problems.map((problem) => problem.field))
       const first = [
         ["direction", directionRef],
@@ -161,8 +174,8 @@ function TransactionForm({
   async function handleDelete(transaction: Transaction) {
     setBusy("deleting")
     try {
-      await onDelete(transaction)
-      onDone()
+      const outcome = await onDelete(transaction)
+      onDone(!outcome.ok)
     } finally {
       setBusy(undefined)
     }

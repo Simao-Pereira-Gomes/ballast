@@ -84,5 +84,6 @@
   "problem_amount_zero": "O montante não pode ser zero",
   "problem_direction_required": "Escolha entrada ou saída",
   "problem_description_required": "A descrição é obrigatória",
-  "problem_description_too_long": "A descrição pode ter no máximo 200 caracteres"
+  "problem_description_too_long": "A descrição pode ter no máximo 200 caracteres",
+  "transaction_already_deleted": "Este movimento já tinha sido eliminado, por isso não havia nada a alterar."
 }

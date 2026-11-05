@@ -11,6 +11,7 @@ import { accountRoleLabel } from "@/ui/account-role.ts"
 import { formatDay, formatMoney } from "@/ui/format.ts"
 import { TransactionDialog } from "./transaction-dialog.tsx"
 import type {
+  DeleteOutcome,
   TransactionDialogMode,
   TransactionFormDetails,
   TransactionOutcome,
@@ -32,16 +33,18 @@ export function AccountLedgerPage({
   transactions: readonly Transaction[]
   onAdd: (details: TransactionFormDetails) => Promise<TransactionOutcome>
   onEdit: (transaction: Transaction, details: TransactionFormDetails) => Promise<TransactionOutcome>
-  onDelete: (transaction: Transaction) => Promise<void>
+  onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [mode, setMode] = useState<TransactionDialogMode>({ kind: "add" })
+  const [alreadyGone, setAlreadyGone] = useState(false)
   const opener = useRef<HTMLElement | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
 
   const openDialog = (next: TransactionDialogMode) => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     setMode(next)
+    setAlreadyGone(false)
     setDialogOpen(true)
   }
 
@@ -98,6 +101,13 @@ export function AccountLedgerPage({
         <h2 id="transactions-heading" className="sr-only">
           {m.account_transactions()}
         </h2>
+        <output className="block">
+          {alreadyGone && (
+            <p className="mb-4 rounded-2xl bg-secondary px-5 py-3 text-sm text-secondary-foreground">
+              {m.transaction_already_deleted()}
+            </p>
+          )}
+        </output>
         {transactions.length === 0 ? (
           <div className="mx-auto mt-10 max-w-md text-center">
             <div className="mx-auto grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
@@ -138,6 +148,9 @@ export function AccountLedgerPage({
           mode.kind === "edit" ? onEdit(mode.transaction, details) : onAdd(details)
         }
         onDelete={onDelete}
+        onGone={() => {
+          setAlreadyGone(true)
+        }}
         onCloseAutoFocus={onCloseAutoFocus}
       />
     </main>

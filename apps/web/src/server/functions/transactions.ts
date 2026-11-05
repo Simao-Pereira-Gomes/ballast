@@ -44,4 +44,4 @@ export const editTransaction = createServerFn({ method: "POST" })
 
 export const deleteTransaction = createServerFn({ method: "POST" })
   .validator(Schema.toStandardSchemaV1(Schema.Struct({ transactionId: Schema.String })))
-  .handler(({ data }) => runQuery(deleteManualTransactionForCurrentOwner(data.transactionId)))
+  .handler(({ data }) => runAction(deleteManualTransactionForCurrentOwner(data.transactionId)))

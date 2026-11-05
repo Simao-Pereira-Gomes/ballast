@@ -84,5 +84,6 @@
   "problem_amount_zero": "The amount can't be zero",
   "problem_direction_required": "Choose money in or money out",
   "problem_description_required": "Description is required",
-  "problem_description_too_long": "Description must be at most 200 characters"
+  "problem_description_too_long": "Description must be at most 200 characters",
+  "transaction_already_deleted": "This Transaction had already been deleted, so there was nothing to change."
 }

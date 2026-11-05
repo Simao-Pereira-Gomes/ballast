@@ -20,24 +20,26 @@ function AccountLedgerRoute() {
   const edit = useServerFn(editTransaction)
   const remove = useServerFn(deleteTransaction)
 
+  const refreshAfter = async <R extends { readonly ok: boolean; readonly reason?: string }>(
+    result: R,
+  ): Promise<R> => {
+    if (result.ok || result.reason === "gone") await router.invalidate()
+    return result
+  }
+
   return (
     <AccountLedgerPage
       account={account}
       transactions={transactions}
-      onAdd={async (details) => {
-        const result = await add({ data: { accountId: account.id, ...details } })
-        if (result.ok) await router.invalidate()
-        return result
-      }}
-      onEdit={async (transaction, details) => {
-        const result = await edit({ data: { transactionId: transaction.id, ...details } })
-        if (result.ok) await router.invalidate()
-        return result
-      }}
-      onDelete={async (transaction) => {
-        await remove({ data: { transactionId: transaction.id } })
-        await router.invalidate()
-      }}
+      onAdd={async (details) =>
+        refreshAfter(await add({ data: { accountId: account.id, ...details } }))
+      }
+      onEdit={async (transaction, details) =>
+        refreshAfter(await edit({ data: { transactionId: transaction.id, ...details } }))
+      }
+      onDelete={async (transaction) =>
+        refreshAfter(await remove({ data: { transactionId: transaction.id } }))
+      }
     />
   )
 }
