@@ -1,5 +1,5 @@
 import { directionOf } from "@ballast/core"
-import type { AccountSummary, Transaction } from "@ballast/core"
+import type { AccountSummary, Holding, Transaction } from "@ballast/core"
 import { Link } from "@tanstack/react-router"
 import { Archive, ChevronLeft, Pencil, Plus, ReceiptText } from "lucide-react"
 import { useRef, useState } from "react"
@@ -7,9 +7,18 @@ import { AccountDialog } from "@/components/accounts/account-dialog.tsx"
 import type { AccountFormDetails, AccountOutcome } from "@/components/accounts/account-dialog.tsx"
 import { AccountSummaryLine } from "@/components/accounts/account-summary-line.tsx"
 import { RoleDot } from "@/components/accounts/role-dot.tsx"
+import type {
+  HoldingFormDetails,
+  HoldingOutcome,
+  RemoveOutcome,
+} from "@/components/holdings/holding-dialog.tsx"
+import { HoldingsSection } from "@/components/holdings/holdings-section.tsx"
+import { CompactEmpty } from "@/components/shell/compact-empty.tsx"
 import { Button } from "@/components/ui/button.tsx"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
+import { accountFigures } from "@/ui/account-figures.ts"
+import { transactionTerms } from "@/ui/transaction-terms.ts"
 import { formatDay, formatMoney } from "@/ui/format.ts"
 import { TransactionDialog } from "./transaction-dialog.tsx"
 import type {
@@ -22,21 +31,30 @@ import type {
 /**
  * One Account: its balance, computed from its Transactions, and the
  * Transactions themselves, newest first. Manual Transactions can be edited
- * and deleted; the ways to add one mirror the Accounts page. The Account
- * itself can be edited and archived, and an archived one unarchived.
+ * and deleted; the ways to add one mirror the Accounts page. An Investment
+ * also shows its Valuation and Holdings. The Account itself can be edited
+ * and archived, and an archived one unarchived.
  */
 export function AccountLedgerPage({
   account,
   transactions,
+  holdings,
   onAdd,
   onEdit,
   onDelete,
+  onAddHolding,
+  onChangeHolding,
+  onRemoveHolding,
   onChangeAccount,
   onArchive,
   onUnarchive,
 }: Readonly<{
   account: AccountSummary
   transactions: readonly Transaction[]
+  holdings: readonly Holding[]
+  onAddHolding: (details: HoldingFormDetails) => Promise<HoldingOutcome>
+  onChangeHolding: (holding: Holding, details: HoldingFormDetails) => Promise<HoldingOutcome>
+  onRemoveHolding: (holding: Holding) => Promise<RemoveOutcome>
   onAdd: (details: TransactionFormDetails) => Promise<TransactionOutcome>
   onEdit: (transaction: Transaction, details: TransactionFormDetails) => Promise<TransactionOutcome>
   onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
@@ -44,6 +62,8 @@ export function AccountLedgerPage({
   onArchive: () => Promise<void>
   onUnarchive: () => Promise<void>
 }>) {
+  // Holdings only exist on Investments: the database won't let an Account with Holdings change Role.
+  const investment = account.role === "investment"
   const [dialogOpen, setDialogOpen] = useState(false)
   const [accountDialogOpen, setAccountDialogOpen] = useState(false)
   const [unarchiving, setUnarchiving] = useState(false)
@@ -137,17 +157,41 @@ export function AccountLedgerPage({
         </div>
       )}
 
-      <section aria-labelledby="balance-heading" className="mt-6 rounded-3xl bg-card p-5 shadow-sm">
-        <h2 id="balance-heading" className="text-sm font-medium text-muted-foreground">
-          {m.account_balance()}
-        </h2>
-        <p className="mt-1 text-3xl font-bold tabular-nums">{formatMoney(account.balance)}</p>
-      </section>
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        {accountFigures(account).map((figure) => (
+          <section
+            key={figure.key}
+            aria-labelledby={`${figure.key}-heading`}
+            className="rounded-3xl bg-card p-5 shadow-sm"
+          >
+            <h2 id={`${figure.key}-heading`} className="text-sm font-medium text-muted-foreground">
+              {figure.label}
+            </h2>
+            <p className="mt-1 text-3xl font-bold tabular-nums">{formatMoney(figure.value)}</p>
+          </section>
+        ))}
+      </div>
+
+      {investment && (
+        <HoldingsSection
+          holdings={holdings}
+          onAdd={onAddHolding}
+          onChange={onChangeHolding}
+          onRemove={onRemoveHolding}
+        />
+      )}
 
       <section aria-labelledby="transactions-heading" className="mt-8">
-        <h2 id="transactions-heading" className="sr-only">
-          {m.account_transactions()}
-        </h2>
+        {/* Beside Holdings the section needs a visible heading; alone, the page title is enough. */}
+        {investment ? (
+          <h2 id="transactions-heading" className="mb-4 text-xl font-bold">
+            {m.transactions_heading()}
+          </h2>
+        ) : (
+          <h2 id="transactions-heading" className="sr-only">
+            {m.account_transactions()}
+          </h2>
+        )}
         <output className="block">
           {alreadyGone && (
             <p className="mb-4 rounded-2xl bg-secondary px-5 py-3 text-sm text-secondary-foreground">
@@ -155,13 +199,21 @@ export function AccountLedgerPage({
             </p>
           )}
         </output>
-        {transactions.length === 0 ? (
+        {transactions.length === 0 && investment ? (
+          <CompactEmpty
+            icon={<ReceiptText className="size-5" aria-hidden />}
+            title={m.no_transactions_title()}
+            body={transactionTerms(account.role).emptyBody()}
+          />
+        ) : transactions.length === 0 ? (
           <div className="mx-auto mt-10 max-w-md text-center">
             <div className="mx-auto grid size-16 place-items-center rounded-full bg-primary/10 text-primary">
               <ReceiptText className="size-7" aria-hidden />
             </div>
             <p className="mt-4 text-xl font-bold">{m.no_transactions_title()}</p>
-            <p className="mt-2 text-muted-foreground">{m.no_transactions_body()}</p>
+            <p className="mt-2 text-muted-foreground">
+              {transactionTerms(account.role).emptyBody()}
+            </p>
           </div>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-3xl bg-card shadow-sm">
@@ -189,6 +241,7 @@ export function AccountLedgerPage({
 
       <TransactionDialog
         open={dialogOpen}
+        role={account.role}
         mode={mode}
         onOpenChange={setDialogOpen}
         onSubmit={(details) =>

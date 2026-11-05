@@ -1,12 +1,11 @@
 import type { Account } from "@ballast/core"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleLabel } from "@/ui/account-role.ts"
-import { assetMixSummary, formatInterestRate } from "@/ui/account-terms.ts"
+import { formatInterestRate } from "@/ui/account-terms.ts"
 
 /**
- * What an Account is: its Role and currency, then its terms when it has
- * them (a Liability's rate, an Investment's asset-class mix), and whether
- * it is archived.
+ * What an Account is: its Role and currency, then a Liability's rate when
+ * it has one, and whether it is archived.
  */
 export function AccountSummaryLine({
   account,
@@ -18,7 +17,6 @@ export function AccountSummaryLine({
   if (account.interestRate !== null) {
     parts.push(m.interest_rate_summary({ rate: formatInterestRate(account.interestRate) }))
   }
-  if (account.assetMix !== null) parts.push(assetMixSummary(account.assetMix))
   return (
     <p className={className}>
       {parts.join(" · ")}

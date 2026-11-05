@@ -9,6 +9,7 @@ import { ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleLabel } from "@/ui/account-role.ts"
+import { accountFigures } from "@/ui/account-figures.ts"
 import { formatMoney } from "@/ui/format.ts"
 import { AccountSummaryLine } from "./account-summary-line.tsx"
 import { RoleDot } from "./role-dot.tsx"
@@ -105,13 +106,23 @@ function AccountCards({ accounts }: Readonly<{ accounts: readonly AccountSummary
               <p className="truncate text-lg font-semibold">{account.name}</p>
               <AccountSummaryLine account={account} className="text-sm text-muted-foreground" />
             </div>
-            <p className="shrink-0 text-lg font-semibold tabular-nums">
-              {formatMoney(account.balance)}
-            </p>
+            <HeadlineFigure account={account} />
           </Link>
         </li>
       ))}
     </ul>
+  )
+}
+
+/** The Account's most telling amount; labelled unless it is a plain balance. */
+function HeadlineFigure({ account }: Readonly<{ account: AccountSummary }>) {
+  const [figure] = accountFigures(account)
+  if (figure === undefined) return null
+  return (
+    <div className="shrink-0 text-right">
+      <p className="text-lg font-semibold tabular-nums">{formatMoney(figure.value)}</p>
+      {figure.key !== "balance" && <p className="text-xs text-muted-foreground">{figure.label}</p>}
+    </div>
   )
 }
 

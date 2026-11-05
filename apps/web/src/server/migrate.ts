@@ -2,6 +2,7 @@ import * as Migrator from "effect/sql/Migrator"
 import ownersAndAccounts from "./migrations/0001_owners_and_accounts.ts"
 import transactions from "./migrations/0002_transactions.ts"
 import accountLifecycle from "./migrations/0003_account_lifecycle.ts"
+import holdings from "./migrations/0004_holdings.ts"
 
 const applyMigrations = Migrator.make({})
 
@@ -11,6 +12,7 @@ export const migrate = applyMigrations({
     "0001_owners_and_accounts": ownersAndAccounts,
     "0002_transactions": transactions,
     "0003_account_lifecycle": accountLifecycle,
+    "0004_holdings": holdings,
   }),
   table: "schema_migration",
 })

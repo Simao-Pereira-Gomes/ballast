@@ -32,10 +32,11 @@ layer(TestDatabase)("Accounts", (it) => {
         role: "operating_cash",
         currency: "EUR",
         interestRate: null,
-        assetMix: null,
         archived: false,
       })
-      expect(yield* listAccounts(owner)).toEqual([{ ...account, balance: Money.eur(0n) }])
+      expect(yield* listAccounts(owner)).toEqual([
+        { ...account, balance: Money.eur(0n), valuation: null },
+      ])
     }),
   )
 
@@ -71,12 +72,16 @@ layer(TestDatabase)("Accounts", (it) => {
         currency: "EUR",
       })
 
-      expect(yield* listAccounts(alice)).toEqual([{ ...alicesAccount, balance: Money.eur(0n) }])
-      expect(yield* listAccounts(bob)).toEqual([{ ...bobsAccount, balance: Money.eur(0n) }])
+      expect(yield* listAccounts(alice)).toEqual([
+        { ...alicesAccount, balance: Money.eur(0n), valuation: null },
+      ])
+      expect(yield* listAccounts(bob)).toEqual([
+        { ...bobsAccount, balance: Money.eur(0n), valuation: null },
+      ])
     }),
   )
 
-  it.effect("opens a Liability with its interest rate and an Investment with its mix", () =>
+  it.effect("opens a Liability with its interest rate, and an Investment with no typed terms", () =>
     Effect.gen(function* () {
       const owner = yield* createOwner
       const card = yield* createAccount(owner, {
@@ -89,14 +94,13 @@ layer(TestDatabase)("Accounts", (it) => {
         name: "Brokerage",
         role: "investment",
         currency: "EUR",
-        assetMix: { equity: "80", bonds: "20" },
       })
 
       expect(card.interestRate).toEqual({ basisPoints: 1850 })
-      expect(brokerage.assetMix).toEqual({ equity: 80, bonds: 20, cash: 0, crypto: 0, other: 0 })
+      expect(brokerage.interestRate).toBeNull()
       expect(yield* listAccounts(owner)).toEqual([
-        { ...card, balance: Money.eur(0n) },
-        { ...brokerage, balance: Money.eur(0n) },
+        { ...card, balance: Money.eur(0n), valuation: null },
+        { ...brokerage, balance: Money.eur(0n), valuation: null },
       ])
     }),
   )
@@ -122,11 +126,15 @@ layer(TestDatabase)("Accounts", (it) => {
         role: "liability",
         interestRate: { basisPoints: 2100 },
       })
-      expect(yield* getAccount(owner, account.id)).toEqual({ ...changed, balance: Money.eur(0n) })
+      expect(yield* getAccount(owner, account.id)).toEqual({
+        ...changed,
+        balance: Money.eur(0n),
+        valuation: null,
+      })
     }),
   )
 
-  it.effect("drops a Role's terms when the Account moves to another Role", () =>
+  it.effect("drops a Liability's rate when the Account moves to another Role", () =>
     Effect.gen(function* () {
       const owner = yield* createOwner
       const loan = yield* createAccount(owner, {
@@ -135,26 +143,14 @@ layer(TestDatabase)("Accounts", (it) => {
         currency: "EUR",
         interestRate: "6",
       })
-      const ppr = yield* createAccount(owner, {
-        name: "PPR",
-        role: "investment",
-        currency: "EUR",
-        assetMix: { equity: "100" },
-      })
 
       const reserve = yield* changeAccount(owner, loan.id, {
         name: "Loan",
         role: "reserve",
         interestRate: "6",
       })
-      const cash = yield* changeAccount(owner, ppr.id, {
-        name: "PPR",
-        role: "operating_cash",
-        assetMix: { equity: "100" },
-      })
 
       expect(reserve.interestRate).toBeNull()
-      expect(cash.assetMix).toBeNull()
     }),
   )
 
@@ -162,22 +158,25 @@ layer(TestDatabase)("Accounts", (it) => {
     Effect.gen(function* () {
       const owner = yield* createOwner
       const account = yield* createAccount(owner, {
-        name: "Brokerage",
-        role: "investment",
+        name: "Card",
+        role: "liability",
         currency: "EUR",
       })
 
       const error = yield* Effect.flip(
-        changeAccount(owner, account.id, {
-          name: "Brokerage",
-          role: "investment",
-          assetMix: { equity: "70", bonds: "20" },
-        }),
+        changeAccount(owner, account.id, { name: "", role: "liability", interestRate: "abc" }),
       )
 
       assert(error._tag === "InvalidAccount")
-      expect(error.problems).toEqual([{ field: "assetMix", problem: "not_100", total: 90 }])
-      expect(yield* getAccount(owner, account.id)).toEqual({ ...account, balance: Money.eur(0n) })
+      expect(error.problems).toEqual([
+        { field: "name", problem: "required" },
+        { field: "interestRate", problem: "invalid" },
+      ])
+      expect(yield* getAccount(owner, account.id)).toEqual({
+        ...account,
+        balance: Money.eur(0n),
+        valuation: null,
+      })
     }),
   )
 
@@ -204,6 +203,7 @@ layer(TestDatabase)("Accounts", (it) => {
       expect(yield* getAccount(alice, alicesAccount.id)).toEqual({
         ...alicesAccount,
         balance: Money.eur(0n),
+        valuation: null,
       })
     }),
   )
@@ -230,8 +230,10 @@ layer(TestDatabase)("Accounts", (it) => {
 
       yield* archiveAccount(owner, closed.id)
 
-      const archived = { ...closed, archived: true, balance: Money.eur(5000n) }
-      expect(yield* listAccounts(owner)).toEqual([{ ...open, balance: Money.eur(0n) }])
+      const archived = { ...closed, archived: true, balance: Money.eur(5000n), valuation: null }
+      expect(yield* listAccounts(owner)).toEqual([
+        { ...open, balance: Money.eur(0n), valuation: null },
+      ])
       expect(yield* listArchivedAccounts(owner)).toEqual([archived])
       expect(yield* getAccount(owner, closed.id)).toEqual(archived)
     }),
@@ -252,7 +254,9 @@ layer(TestDatabase)("Accounts", (it) => {
 
       yield* unarchiveAccount(owner, account.id)
       expect(yield* listArchivedAccounts(owner)).toEqual([])
-      expect(yield* listAccounts(owner)).toEqual([{ ...account, balance: Money.eur(0n) }])
+      expect(yield* listAccounts(owner)).toEqual([
+        { ...account, balance: Money.eur(0n), valuation: null },
+      ])
     }),
   )
 

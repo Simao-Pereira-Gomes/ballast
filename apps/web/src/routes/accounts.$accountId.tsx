@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { useServerFn } from "@tanstack/react-start"
 import { AccountLedgerPage } from "../components/transactions/account-ledger-page.tsx"
 import { archiveAccount, changeAccount, unarchiveAccount } from "../server/functions/accounts.ts"
+import { addHolding, changeHolding, removeHolding } from "../server/functions/holdings.ts"
 import {
   addTransaction,
   deleteTransaction,
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/accounts/$accountId")({
 })
 
 function AccountLedgerRoute() {
-  const { account, transactions } = Route.useLoaderData()
+  const { account, transactions, holdings } = Route.useLoaderData()
   const router = useRouter()
   const add = useServerFn(addTransaction)
   const edit = useServerFn(editTransaction)
@@ -23,6 +24,9 @@ function AccountLedgerRoute() {
   const change = useServerFn(changeAccount)
   const archive = useServerFn(archiveAccount)
   const unarchive = useServerFn(unarchiveAccount)
+  const addHoldingFn = useServerFn(addHolding)
+  const changeHoldingFn = useServerFn(changeHolding)
+  const removeHoldingFn = useServerFn(removeHolding)
 
   const refreshAfter = async <R extends { readonly ok: boolean; readonly reason?: string }>(
     result: R,
@@ -35,6 +39,7 @@ function AccountLedgerRoute() {
     <AccountLedgerPage
       account={account}
       transactions={transactions}
+      holdings={holdings}
       onAdd={async (details) =>
         refreshAfter(await add({ data: { accountId: account.id, ...details } }))
       }
@@ -43,6 +48,15 @@ function AccountLedgerRoute() {
       }
       onDelete={async (transaction) =>
         refreshAfter(await remove({ data: { transactionId: transaction.id } }))
+      }
+      onAddHolding={async (details) =>
+        refreshAfter(await addHoldingFn({ data: { accountId: account.id, ...details } }))
+      }
+      onChangeHolding={async (holding, details) =>
+        refreshAfter(await changeHoldingFn({ data: { holdingId: holding.id, ...details } }))
+      }
+      onRemoveHolding={async (holding) =>
+        refreshAfter(await removeHoldingFn({ data: { holdingId: holding.id } }))
       }
       onChangeAccount={async ({ currency: _currency, ...changes }) =>
         refreshAfter(await change({ data: { accountId: account.id, ...changes } }))

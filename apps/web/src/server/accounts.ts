@@ -2,17 +2,16 @@ import {
   AccountId,
   AccountNotFound,
   AccountRole,
+  InvalidAccount,
   Money,
   OwnerId,
   decodeAccountChanges,
   decodeNewAccount,
 } from "@ballast/core"
-import type { Account, AccountSummary, AccountTerms, AssetMix } from "@ballast/core"
+import type { Account, AccountSummary, AccountTerms } from "@ballast/core"
 import { Effect, Schema } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { CurrentOwner } from "./owners.ts"
-
-const Percent = Schema.NullOr(Schema.Number)
 
 const AccountRow = Schema.Struct({
   id: AccountId,
@@ -21,50 +20,39 @@ const AccountRow = Schema.Struct({
   role: AccountRole,
   currency: Money.Currency,
   interestRateBp: Schema.NullOr(Schema.Number),
-  equityPercent: Percent,
-  bondsPercent: Percent,
-  cashPercent: Percent,
-  cryptoPercent: Percent,
-  otherPercent: Percent,
   archived: Schema.Boolean,
 })
 
 const AccountSummaryRow = Schema.Struct({
   ...AccountRow.fields,
   balanceCents: Schema.BigIntFromString,
+  valuationCents: Schema.NullOr(Schema.BigIntFromString),
+  oldestValuedOn: Schema.NullOr(Schema.String),
 })
 
-/** The database keeps the mix as all five percentages or none (migration 0003). */
-const toAccount = ({
-  interestRateBp,
-  equityPercent,
-  bondsPercent,
-  cashPercent,
-  cryptoPercent,
-  otherPercent,
-  ...row
-}: typeof AccountRow.Type): Account => ({
+const toAccount = ({ interestRateBp, ...row }: typeof AccountRow.Type): Account => ({
   ...row,
   interestRate: interestRateBp === null ? null : { basisPoints: interestRateBp },
-  assetMix:
-    equityPercent === null ||
-    bondsPercent === null ||
-    cashPercent === null ||
-    cryptoPercent === null ||
-    otherPercent === null
-      ? null
-      : {
-          equity: equityPercent,
-          bonds: bondsPercent,
-          cash: cashPercent,
-          crypto: cryptoPercent,
-          other: otherPercent,
-        },
 })
 
-const toSummary = ({ balanceCents, ...row }: typeof AccountSummaryRow.Type): AccountSummary => {
+const toSummary = ({
+  balanceCents,
+  valuationCents,
+  oldestValuedOn,
+  ...row
+}: typeof AccountSummaryRow.Type): AccountSummary => {
   const account = toAccount(row)
-  return { ...account, balance: { cents: balanceCents, currency: account.currency } }
+  return {
+    ...account,
+    balance: { cents: balanceCents, currency: account.currency },
+    valuation:
+      valuationCents === null || oldestValuedOn === null
+        ? null
+        : {
+            value: { cents: valuationCents, currency: account.currency },
+            oldestValuedOn: Temporal.PlainDate.from(oldestValuedOn),
+          },
+  }
 }
 
 const decodeAccounts = (rows: unknown) =>
@@ -82,25 +70,14 @@ const decodeSummaries = (rows: unknown) =>
 const accountColumns = (table: string) =>
   `${table}.id, ${table}.owner_id AS "ownerId", ${table}.name, ${table}.role,
   ${table}.currency, ${table}.interest_rate_bp AS "interestRateBp",
-  ${table}.equity_percent AS "equityPercent", ${table}.bonds_percent AS "bondsPercent",
-  ${table}.cash_percent AS "cashPercent", ${table}.crypto_percent AS "cryptoPercent",
-  ${table}.other_percent AS "otherPercent",
   ${table}.archived_at IS NOT NULL AS archived`
 
 const columns = accountColumns("account")
 
 /** The terms as column values: `null` where the Role has none. */
-const termColumns = ({ interestRate, assetMix }: AccountTerms) => {
-  const percent = (assetClass: keyof AssetMix) => assetMix?.[assetClass] ?? null
-  return {
-    interestRateBp: interestRate?.basisPoints ?? null,
-    equity: percent("equity"),
-    bonds: percent("bonds"),
-    cash: percent("cash"),
-    crypto: percent("crypto"),
-    other: percent("other"),
-  }
-}
+const termColumns = ({ interestRate }: AccountTerms) => ({
+  interestRateBp: interestRate?.basisPoints ?? null,
+})
 
 const asAccountId = (accountId: string) =>
   Effect.fromOption(Schema.decodeUnknownOption(AccountId)(accountId)).pipe(
@@ -126,12 +103,9 @@ export const createAccount = (ownerId: OwnerId, input: unknown) =>
     const sql = yield* SqlClient
     const accounts = yield* decodeAccounts(
       yield* sql`
-        INSERT INTO account (owner_id, name, role, currency, interest_rate_bp,
-                             equity_percent, bonds_percent, cash_percent, crypto_percent,
-                             other_percent)
+        INSERT INTO account (owner_id, name, role, currency, interest_rate_bp)
         VALUES (${ownerId}, ${details.name}, ${details.role}, ${details.currency},
-                ${terms.interestRateBp}, ${terms.equity}, ${terms.bonds}, ${terms.cash},
-                ${terms.crypto}, ${terms.other})
+                ${terms.interestRateBp})
         RETURNING ${sql.literal(columns)}
       `,
     )
@@ -142,8 +116,9 @@ export const createAccount = (ownerId: OwnerId, input: unknown) =>
 
 /**
  * Changes the name, Role and Role terms of one of the Owner's Accounts,
- * archived or not. Moving away from Liability or Investment clears their
- * terms. Fails with `InvalidAccount` or `AccountNotFound`.
+ * archived or not. Moving away from Liability clears its rate. An Account
+ * with Holdings stays an Investment until they are removed (ADR 0007).
+ * Fails with `InvalidAccount` or `AccountNotFound`.
  */
 export const changeAccount = (ownerId: OwnerId, accountId: string, input: unknown) =>
   Effect.gen(function* () {
@@ -151,17 +126,22 @@ export const changeAccount = (ownerId: OwnerId, accountId: string, input: unknow
     const id = yield* asAccountId(accountId)
     const terms = termColumns(changes)
     const sql = yield* SqlClient
+    if (changes.role !== "investment") {
+      const [held] = yield* sql`
+        SELECT 1 FROM holding WHERE owner_id = ${ownerId} AND account_id = ${id} LIMIT 1
+      `
+      if (held !== undefined) {
+        return yield* new InvalidAccount({
+          problems: [{ field: "role", problem: "has_holdings" }],
+        })
+      }
+    }
     const accounts = yield* decodeAccounts(
       yield* sql`
         UPDATE account
         SET name = ${changes.name},
             role = ${changes.role},
-            interest_rate_bp = ${terms.interestRateBp},
-            equity_percent = ${terms.equity},
-            bonds_percent = ${terms.bonds},
-            cash_percent = ${terms.cash},
-            crypto_percent = ${terms.crypto},
-            other_percent = ${terms.other}
+            interest_rate_bp = ${terms.interestRateBp}
         WHERE owner_id = ${ownerId} AND id = ${id}
         RETURNING ${sql.literal(columns)}
       `,
@@ -203,7 +183,7 @@ export const unarchiveAccount = (ownerId: OwnerId, accountId: string) =>
     return yield* affected(accountId, accounts)
   })
 
-/** The Owner's Accounts with their balances, narrowed by `where`. */
+/** The Owner's Accounts with their balances and Valuations, narrowed by `where`. */
 const selectSummaries = (
   ownerId: OwnerId,
   where: { readonly accountId: AccountId } | { readonly archived: boolean },
@@ -219,11 +199,20 @@ const selectSummaries = (
     return yield* decodeSummaries(
       yield* sql`
         SELECT ${sql.literal(accountColumns("a"))},
-               COALESCE(SUM(t.amount_cents), 0)::text AS "balanceCents"
+               COALESCE(t.balance_cents, 0)::text AS "balanceCents",
+               h.valuation_cents::text AS "valuationCents",
+               h.oldest_valued_on::text AS "oldestValuedOn"
         FROM account a
-        LEFT JOIN transaction t ON t.owner_id = a.owner_id AND t.account_id = a.id
+        LEFT JOIN (
+          SELECT owner_id, account_id, SUM(amount_cents) AS balance_cents
+          FROM transaction WHERE owner_id = ${ownerId} GROUP BY owner_id, account_id
+        ) t ON t.owner_id = a.owner_id AND t.account_id = a.id
+        LEFT JOIN (
+          SELECT owner_id, account_id, SUM(value_cents) AS valuation_cents,
+                 MIN(valued_on) AS oldest_valued_on
+          FROM holding WHERE owner_id = ${ownerId} GROUP BY owner_id, account_id
+        ) h ON h.owner_id = a.owner_id AND h.account_id = a.id
         WHERE a.owner_id = ${ownerId} ${narrowing}
-        GROUP BY a.owner_id, a.id
         ORDER BY a.created_at, a.id
       `,
     )

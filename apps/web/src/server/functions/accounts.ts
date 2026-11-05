@@ -14,7 +14,6 @@ export type { AccountProblem } from "@ballast/core"
 /** The Role terms a form submits; the Accounts service checks them against the Role. */
 const TermsForm = {
   interestRate: Schema.optionalKey(Schema.String),
-  assetMix: Schema.optionalKey(Schema.Record(Schema.String, Schema.String)),
 }
 
 /** The shape a form submits; the Accounts service checks the rules. */

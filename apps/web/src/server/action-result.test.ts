@@ -1,4 +1,9 @@
-import { InvalidTransaction, TransactionNotFound } from "@ballast/core"
+import {
+  HoldingNotFound,
+  InvalidHolding,
+  InvalidTransaction,
+  TransactionNotFound,
+} from "@ballast/core"
 import { describe, expect, it } from "@effect/vitest"
 import { Effect } from "effect"
 import { toActionResult } from "./action-result.ts"
@@ -26,6 +31,20 @@ describe("toActionResult", () => {
       )
 
       expect(result).toEqual({ ok: false, reason: "gone" })
+    }),
+  )
+
+  it.effect("treats a Holding the same way: fixable details, or gone", () =>
+    Effect.gen(function* () {
+      const problems = [{ field: "value", problem: "required" }] as const
+      expect(yield* toActionResult(Effect.fail(new InvalidHolding({ problems })))).toEqual({
+        ok: false,
+        reason: "invalid",
+        problems,
+      })
+      expect(
+        yield* toActionResult(Effect.fail(new HoldingNotFound({ holdingId: "a-stale-id" }))),
+      ).toEqual({ ok: false, reason: "gone" })
     }),
   )
 

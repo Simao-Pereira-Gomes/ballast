@@ -174,22 +174,27 @@ test("the Owner changes an Account's Role and terms, then archives and unarchive
   await expect(card).toContainText("Liability · EUR · 18.5% APR")
   await card.click()
 
+  await page.getByRole("button", { name: "Add Transaction" }).first().click()
+  const charge = page.getByRole("dialog", { name: "Add a Transaction" })
+  await expect(charge.getByRole("group", { name: "Charge or payment?" })).toBeVisible()
+  await charge.getByRole("radio", { name: "Charge" }).check()
+  await charge.getByLabel("Amount").fill("42")
+  await charge.getByLabel("Description").fill("Groceries on the card")
+  await charge.getByRole("button", { name: "Save" }).click()
+  await expect(charge).toBeHidden()
+  await expect(page.getByRole("region", { name: "Owed" })).toContainText("€42.00")
+
   await page.getByRole("button", { name: "Edit Account" }).click()
   const editDialog = page.getByRole("dialog", { name: "Edit Account" })
   await expect(editDialog.getByLabel("Interest rate (APR)")).toHaveValue("18.5")
   await editDialog.getByRole("radio", { name: /Investment/ }).check()
   await expect(editDialog.getByLabel("Interest rate (APR)")).toBeHidden()
-  await editDialog.getByLabel("Equity").fill("80")
-  await editDialog.getByLabel("Bonds").fill("30")
-  await expect(editDialog.getByText("Total: 110%")).toBeVisible()
-  await editDialog.getByRole("button", { name: "Save" }).click()
-  await expect(editDialog.getByText("The percentages must add up to 100 (now 110)")).toBeVisible()
-  await expect(editDialog.getByLabel("Equity")).toBeFocused()
-
-  await editDialog.getByLabel("Bonds").fill("20")
+  await expect(
+    editDialog.getByText("You record its Holdings on the Account's page.", { exact: false }),
+  ).toBeVisible()
   await editDialog.getByRole("button", { name: "Save" }).click()
   await expect(editDialog).toBeHidden()
-  await expect(page.getByText("Investment · EUR · 80% Equity · 20% Bonds")).toBeVisible()
+  await expect(page.getByText("Investment · EUR", { exact: true })).toBeVisible()
 
   await page.getByRole("button", { name: "Edit Account" }).click()
   await editDialog.getByRole("button", { name: "Archive Account" }).click()
@@ -207,4 +212,80 @@ test("the Owner changes an Account's Role and terms, then archives and unarchive
   await page.getByRole("link", { name: "Accounts", exact: true }).first().click()
   await expect(accounts.getByRole("link", { name: /Old card/ })).toBeVisible()
   await expect(page.getByRole("region", { name: "Archived Accounts" })).toBeHidden()
+})
+
+test("the Owner records Holdings and sees the Asset Mix and concentration they add up to", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await page.getByRole("button", { name: "Open Account" }).click()
+  const openDialog = page.getByRole("dialog", { name: "Open an Account" })
+  await openDialog.getByLabel("Name").fill("Broker")
+  await openDialog.getByRole("radio", { name: /Investment/ }).check()
+  await openDialog.getByRole("button", { name: "Open Account" }).click()
+  await expect(openDialog).toBeHidden()
+  await page
+    .getByRole("region", { name: "Your Accounts" })
+    .getByRole("link", { name: /Broker/ })
+    .click()
+
+  const holdings = page.getByRole("region", { name: "Holdings" })
+  await expect(holdings.getByText("No Holdings yet")).toBeVisible()
+
+  await holdings.getByRole("button", { name: "Add Holding" }).click()
+  const dialog = page.getByRole("dialog", { name: "Add a Holding" })
+  // A new Holding starts as an equity index fund.
+  await expect(dialog.getByRole("radio", { name: /Index fund or ETF/ })).toBeChecked()
+  await expect(dialog.getByRole("radio", { name: /^Equity/ })).toBeChecked()
+  await dialog.getByLabel("Name").fill("Vanguard FTSE All-World")
+  await dialog.getByRole("button", { name: "Save" }).click()
+  await expect(dialog.getByText("Enter the Index it tracks")).toBeVisible()
+  await expect(dialog.getByLabel("Index tracked")).toBeFocused()
+  await dialog.getByLabel("Index tracked").fill("FTSE All-World")
+  await dialog.getByLabel("Current value").fill("800")
+  await dialog.getByLabel("Units").fill("6.5")
+  await dialog.getByRole("button", { name: "Save" }).click()
+  await expect(dialog).toBeHidden()
+
+  await holdings.getByRole("button", { name: "Add Holding" }).click()
+  await dialog.getByRole("radio", { name: /Stock/ }).check()
+  await expect(dialog.getByText("A stock always counts as Equity.")).toBeVisible()
+  await dialog.getByLabel("Name").fill("Galp")
+  await dialog.getByLabel("Ticker").fill("galp")
+  await dialog.getByLabel("Current value").fill("200")
+  await dialog.getByRole("button", { name: "Save" }).click()
+  await expect(dialog).toBeHidden()
+
+  await expect(page.getByRole("region", { name: "Market value" })).toContainText("€1,000.00")
+  await expect(page.getByRole("region", { name: "Net contributions" })).toContainText("€0.00")
+  await expect(page.getByRole("region", { name: "Market gain" })).toContainText("€1,000.00")
+  await expect(holdings.getByRole("region", { name: "By Index" })).toContainText("FTSE All-World")
+  await expect(holdings.getByRole("region", { name: "By stock" })).toContainText("GALP")
+  await expect(holdings.getByRole("button", { name: /Vanguard/ })).toContainText("6.5 units")
+
+  await page.getByRole("button", { name: "Edit Account" }).click()
+  const editDialog = page.getByRole("dialog", { name: "Edit Account" })
+  await editDialog.getByRole("radio", { name: /Reserve/ }).check()
+  await editDialog.getByRole("button", { name: "Save" }).click()
+  await expect(
+    editDialog.getByText("Remove its Holdings before it stops being an Investment"),
+  ).toBeVisible()
+  await editDialog.getByRole("button", { name: "Cancel" }).click()
+
+  await page.getByRole("link", { name: "Accounts", exact: true }).first().click()
+  await page.getByRole("link", { name: /Investment overview/ }).click()
+  await expect(page.getByRole("heading", { name: "Investment", level: 1 })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Total market value" })).toContainText("€1,000.00")
+  await expect(page.getByRole("region", { name: "Asset-class mix" })).toContainText("100%")
+  await expect(page.getByRole("region", { name: "Concentrated in single stocks" })).toContainText(
+    "Galp is 20% of your Investment, above the 10% Concentration Limit.",
+  )
+
+  await page.getByRole("link", { name: /Broker/ }).click()
+  await holdings.getByRole("button", { name: /Galp/ }).click()
+  const edit = page.getByRole("dialog", { name: "Edit Holding" })
+  await edit.getByRole("button", { name: "Remove Holding" }).click()
+  await edit.getByRole("button", { name: "Remove for good" }).click()
+  await expect(edit).toBeHidden()
+  await expect(page.getByRole("region", { name: "Market value" })).toContainText("€800.00")
 })

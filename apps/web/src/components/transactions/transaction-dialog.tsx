@@ -1,5 +1,5 @@
 import { directionOf, directions } from "@ballast/core"
-import type { Direction, Transaction, TransactionProblem } from "@ballast/core"
+import type { AccountRole, Direction, Transaction, TransactionProblem } from "@ballast/core"
 import { useRef, useState } from "react"
 import type { SubmitEvent } from "react"
 import { sheetContentClassName, sheetHandleClassName } from "@/components/shell/sheet.ts"
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
 import { amountForInput } from "@/ui/format.ts"
 import { transactionProblemMessage } from "@/ui/transaction-problems.ts"
+import { transactionTerms } from "@/ui/transaction-terms.ts"
 
 export interface TransactionFormDetails {
   readonly date: string
@@ -49,12 +50,19 @@ const directionLabel: Record<Direction, () => string> = {
   inflow: m.direction_inflow,
 }
 
+/** On a Liability, money out is a charge (more owed) and money in a payment (less owed). */
+const liabilityDirectionLabel: Record<Direction, () => string> = {
+  outflow: m.direction_charge,
+  inflow: m.direction_payment,
+}
+
 /**
  * Adding or editing a manual Transaction: a bottom sheet on phones, a
  * centred dialog on larger screens. Editing also offers a two-step delete.
  */
 export function TransactionDialog({
   open,
+  role,
   mode,
   onOpenChange,
   onSubmit,
@@ -63,6 +71,8 @@ export function TransactionDialog({
   onCloseAutoFocus,
 }: Readonly<{
   open: boolean
+  /** The Role of the Account the Transaction is on, which names its directions. */
+  role: AccountRole
   /** Kept while the dialog closes, so its content doesn't change mid-animation. */
   mode: TransactionDialogMode
   onOpenChange: (open: boolean) => void
@@ -86,12 +96,13 @@ export function TransactionDialog({
             {editing ? m.edit_transaction_title() : m.add_transaction_title()}
           </DialogTitle>
           <DialogDescription>
-            {editing ? m.edit_transaction_description() : m.add_transaction_description()}
+            {editing ? m.edit_transaction_description() : transactionTerms(role).addDescription()}
           </DialogDescription>
         </DialogHeader>
         <TransactionForm
           key={editing ? mode.transaction.id : "add"}
           mode={mode}
+          role={role}
           onSubmit={onSubmit}
           onDelete={onDelete}
           onDone={(gone) => {
@@ -114,11 +125,13 @@ const fieldClassName = "h-12 rounded-2xl bg-secondary px-4 text-base md:text-bas
 /** Mounted only while the dialog is open, so each opening starts from its Transaction. */
 function TransactionForm({
   mode,
+  role,
   onSubmit,
   onDelete,
   onDone,
 }: Readonly<{
   mode: TransactionDialogMode
+  role: AccountRole
   onSubmit: (details: TransactionFormDetails) => Promise<TransactionOutcome>
   onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
   onDone: (gone: boolean) => void
@@ -134,10 +147,13 @@ function TransactionForm({
   const existing = mode.kind === "edit" ? mode.transaction : undefined
   const initial = {
     date: existing?.date.toString() ?? Temporal.Now.plainDateISO().toString(),
-    direction: existing === undefined ? "outflow" : directionOf(existing),
+    direction:
+      existing === undefined ? transactionTerms(role).defaultDirection : directionOf(existing),
     amount: existing === undefined ? "" : amountForInput(existing.amount),
     description: existing?.description ?? "",
   }
+
+  const [chosenDirection, setChosenDirection] = useState<Direction>(initial.direction)
 
   const problemFor = (field: TransactionProblem["field"]) =>
     problems.find((problem) => problem.field === field)
@@ -198,7 +214,9 @@ function TransactionForm({
   return (
     <form noValidate className="space-y-5" onSubmit={(event) => void handleSubmit(event)}>
       <fieldset aria-describedby={describedBy("direction")}>
-        <legend className="text-sm font-medium">{m.transaction_direction()}</legend>
+        <legend className="text-sm font-medium">
+          {role === "liability" ? m.liability_direction() : m.transaction_direction()}
+        </legend>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {directions.map((direction, index) => (
             <label
@@ -214,10 +232,13 @@ function TransactionForm({
                 type="radio"
                 name="direction"
                 value={direction}
-                defaultChecked={direction === initial.direction}
+                checked={direction === chosenDirection}
+                onChange={() => {
+                  setChosenDirection(direction)
+                }}
                 className="absolute inset-0 cursor-pointer appearance-none rounded-2xl opacity-0"
               />
-              {directionLabel[direction]()}
+              {(role === "liability" ? liabilityDirectionLabel : directionLabel)[direction]()}
             </label>
           ))}
         </div>
@@ -265,7 +286,7 @@ function TransactionForm({
           name="description"
           autoComplete="off"
           defaultValue={initial.description}
-          placeholder={m.transaction_description_placeholder()}
+          placeholder={transactionTerms(role).example[chosenDirection]()}
           aria-invalid={problemFor("description") !== undefined}
           aria-describedby={describedBy("description")}
           className={fieldClassName}
