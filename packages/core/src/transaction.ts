@@ -118,3 +118,7 @@ export const decodeTransactionDetails = (
 export class TransactionNotFound extends Data.TaggedError("TransactionNotFound")<{
   readonly transactionId: string
 }> {}
+
+/** Whether a Transaction brought money in or took it out, from its amount's sign. */
+export const directionOf = (transaction: Pick<Transaction, "amount">): Direction =>
+  transaction.amount.cents < 0n ? "outflow" : "inflow"

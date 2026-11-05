@@ -1,3 +1,4 @@
+import { directionOf } from "@ballast/core"
 import type { AccountSummary, Transaction } from "@ballast/core"
 import { Link } from "@tanstack/react-router"
 import { ChevronLeft, Plus, ReceiptText } from "lucide-react"
@@ -165,7 +166,7 @@ function TransactionRow({
       <p
         className={cn(
           "shrink-0 font-semibold tabular-nums",
-          transaction.amount.cents > 0n && "text-primary",
+          directionOf(transaction) === "inflow" && "text-primary",
         )}
       >
         {formatMoney(transaction.amount)}

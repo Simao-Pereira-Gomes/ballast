@@ -1,6 +1,6 @@
 import { Result } from "effect"
 import { assert, describe, expect, it } from "vitest"
-import { Money, decodeTransactionDetails } from "../src/index.ts"
+import { Money, decodeTransactionDetails, directionOf } from "../src/index.ts"
 
 const valid = {
   date: "2026-10-31",
@@ -86,5 +86,12 @@ describe("decodeTransactionDetails", () => {
       { field: "description", problem: "too_long" },
     ])
     assert(Result.isSuccess(decodeTransactionDetails({ ...valid, description: "x".repeat(200) })))
+  })
+})
+
+describe("directionOf", () => {
+  it("reads the direction from the amount's sign", () => {
+    expect(directionOf({ amount: Money.eur(-1n) })).toBe("outflow")
+    expect(directionOf({ amount: Money.eur(185000n) })).toBe("inflow")
   })
 })

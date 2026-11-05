@@ -113,16 +113,14 @@ export const deleteManualTransaction = (ownerId: OwnerId, transactionId: string)
   })
 
 /** The Transactions on one of the Owner's Accounts, newest first. */
-export const listTransactions = (ownerId: OwnerId, accountId: string) =>
+export const listTransactions = (ownerId: OwnerId, accountId: AccountId) =>
   Effect.gen(function* () {
-    const decoded = Schema.decodeUnknownOption(AccountId)(accountId)
-    if (decoded._tag === "None") return []
     const sql = yield* SqlClient
     const transactions: readonly Transaction[] = yield* decodeRows(
       yield* sql`
         SELECT ${sql.literal(columns)}
         FROM transaction
-        WHERE owner_id = ${ownerId} AND account_id = ${decoded.value}
+        WHERE owner_id = ${ownerId} AND account_id = ${accountId}
         ORDER BY date DESC, created_at DESC, id
       `,
     )

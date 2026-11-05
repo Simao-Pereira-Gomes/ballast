@@ -1,4 +1,4 @@
-import { directions } from "@ballast/core"
+import { directionOf, directions } from "@ballast/core"
 import type { Direction, Transaction, TransactionProblem } from "@ballast/core"
 import { useRef, useState } from "react"
 import type { SubmitEvent } from "react"
@@ -120,7 +120,7 @@ function TransactionForm({
   const existing = mode.kind === "edit" ? mode.transaction : undefined
   const initial = {
     date: existing?.date.toString() ?? Temporal.Now.plainDateISO().toString(),
-    direction: existing === undefined || existing.amount.cents < 0n ? "outflow" : "inflow",
+    direction: existing === undefined ? "outflow" : directionOf(existing),
     amount: existing === undefined ? "" : amountForInput(existing.amount),
     description: existing?.description ?? "",
   }
