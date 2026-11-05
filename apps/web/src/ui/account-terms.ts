@@ -7,6 +7,7 @@ const labels: Record<AssetClass, () => string> = {
   equity: m.asset_class_equity,
   bonds: m.asset_class_bonds,
   cash: m.asset_class_cash,
+  crypto: m.asset_class_crypto,
   other: m.asset_class_other,
 }
 
@@ -14,6 +15,7 @@ const descriptions: Record<AssetClass, () => string> = {
   equity: m.asset_class_equity_description,
   bonds: m.asset_class_bonds_description,
   cash: m.asset_class_cash_description,
+  crypto: m.asset_class_crypto_description,
   other: m.asset_class_other_description,
 }
 

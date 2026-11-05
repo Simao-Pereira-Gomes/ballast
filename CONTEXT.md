@@ -137,7 +137,7 @@ _Avoid_: Portfolio (as a domain term), assets
 _pt-PT_: **Investimento** · _Evitar_: Carteira
 
 **Asset Class**:
-What Investment money is exposed to: equity, bonds, cash or other. An ETF or fund counts as the asset class it holds; Ballast never models the product itself.
+What Investment money is exposed to: equity, bonds, cash, crypto or other. An ETF or fund counts as the asset class it holds. Crypto is its own class because mainstream guidance treats it as speculative and outside the Target Allocation.
 _Avoid_: Asset type, instrument, product
 _pt-PT_: **Classe de ativos** · _Evitar_: Tipo de ativo, Produto
 

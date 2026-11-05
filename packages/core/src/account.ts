@@ -29,7 +29,7 @@ const NewAccountSchema = Schema.Struct({
 })
 
 /** What an Investment's money is invested in. */
-export const AssetClass = Schema.Literals(["equity", "bonds", "cash", "other"])
+export const AssetClass = Schema.Literals(["equity", "bonds", "cash", "crypto", "other"])
 export type AssetClass = typeof AssetClass.Type
 
 export const assetClasses: readonly AssetClass[] = AssetClass.literals
@@ -115,8 +115,8 @@ const wholePercentage = /^\d{1,3}$/
  * Reads one asset class's share as the Owner typed it: a whole percentage
  * from 0 to 100, where blank means 0. Returns `undefined` for anything else.
  */
-export const parseAssetShare = (text: string): number | undefined => {
-  const trimmed = text.trim()
+export const parseAssetShare = (typed: string): number | undefined => {
+  const trimmed = typed.trim()
   if (trimmed === "") return 0
   const percent = wholePercentage.test(trimmed) ? Number(trimmed) : 101
   return percent <= 100 ? percent : undefined
@@ -137,14 +137,15 @@ const checkAssetMix = (input: unknown): Checked<AssetMix | null> => {
   const submitted = field(input, "assetMix")
   const texts = assetClasses.map((assetClass) => text(submitted, assetClass))
   if (texts.every((percentText) => percentText === "")) return Result.succeed(null)
-  const mix: Record<AssetClass, number> = { equity: 0, bonds: 0, cash: 0, other: 0 }
-  let total = 0
+  const entries: [AssetClass, number][] = []
   for (const [index, assetClass] of assetClasses.entries()) {
     const percent = parseAssetShare(texts[index] ?? "")
     if (percent === undefined) return Result.fail({ field: "assetMix", problem: "invalid" })
-    mix[assetClass] = percent
-    total += percent
+    entries.push([assetClass, percent])
   }
+  const total = entries.reduce((sum, [, percent]) => sum + percent, 0)
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- one entry per asset class, so every key is present
+  const mix = Object.fromEntries(entries) as AssetMix
   return total === 100
     ? Result.succeed(mix)
     : Result.fail({ field: "assetMix", problem: "not_100", total })

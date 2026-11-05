@@ -93,7 +93,7 @@ layer(TestDatabase)("Accounts", (it) => {
       })
 
       expect(card.interestRate).toEqual({ basisPoints: 1850 })
-      expect(brokerage.assetMix).toEqual({ equity: 80, bonds: 20, cash: 0, other: 0 })
+      expect(brokerage.assetMix).toEqual({ equity: 80, bonds: 20, cash: 0, crypto: 0, other: 0 })
       expect(yield* listAccounts(owner)).toEqual([
         { ...card, balance: Money.eur(0n) },
         { ...brokerage, balance: Money.eur(0n) },
@@ -269,9 +269,9 @@ layer(TestDatabase)("Accounts", (it) => {
       for (const update of [
         sql`UPDATE account SET interest_rate_bp = 500 WHERE id = ${account.id}`,
         sql`UPDATE account SET role = 'investment', equity_percent = 60, bonds_percent = 30,
-              cash_percent = 0, other_percent = 0 WHERE id = ${account.id}`,
+              cash_percent = 0, crypto_percent = 0, other_percent = 0 WHERE id = ${account.id}`,
         sql`UPDATE account SET equity_percent = 100, bonds_percent = 0, cash_percent = 0,
-              other_percent = 0 WHERE id = ${account.id}`,
+              crypto_percent = 0, other_percent = 0 WHERE id = ${account.id}`,
         sql`UPDATE account SET role = 'investment', equity_percent = 100 WHERE id = ${account.id}`,
       ]) {
         const error = yield* Effect.flip(update)

@@ -24,6 +24,7 @@ const AccountRow = Schema.Struct({
   equityPercent: Percent,
   bondsPercent: Percent,
   cashPercent: Percent,
+  cryptoPercent: Percent,
   otherPercent: Percent,
   archived: Schema.Boolean,
 })
@@ -33,21 +34,32 @@ const AccountSummaryRow = Schema.Struct({
   balanceCents: Schema.BigIntFromString,
 })
 
-/** The database keeps the mix as all four percentages or none (migration 0003). */
+/** The database keeps the mix as all five percentages or none (migration 0003). */
 const toAccount = ({
   interestRateBp,
   equityPercent,
   bondsPercent,
   cashPercent,
+  cryptoPercent,
   otherPercent,
   ...row
 }: typeof AccountRow.Type): Account => ({
   ...row,
   interestRate: interestRateBp === null ? null : { basisPoints: interestRateBp },
   assetMix:
-    equityPercent === null || bondsPercent === null || cashPercent === null || otherPercent === null
+    equityPercent === null ||
+    bondsPercent === null ||
+    cashPercent === null ||
+    cryptoPercent === null ||
+    otherPercent === null
       ? null
-      : { equity: equityPercent, bonds: bondsPercent, cash: cashPercent, other: otherPercent },
+      : {
+          equity: equityPercent,
+          bonds: bondsPercent,
+          cash: cashPercent,
+          crypto: cryptoPercent,
+          other: otherPercent,
+        },
 })
 
 const toSummary = ({ balanceCents, ...row }: typeof AccountSummaryRow.Type): AccountSummary => {
@@ -71,7 +83,8 @@ const accountColumns = (table: string) =>
   `${table}.id, ${table}.owner_id AS "ownerId", ${table}.name, ${table}.role,
   ${table}.currency, ${table}.interest_rate_bp AS "interestRateBp",
   ${table}.equity_percent AS "equityPercent", ${table}.bonds_percent AS "bondsPercent",
-  ${table}.cash_percent AS "cashPercent", ${table}.other_percent AS "otherPercent",
+  ${table}.cash_percent AS "cashPercent", ${table}.crypto_percent AS "cryptoPercent",
+  ${table}.other_percent AS "otherPercent",
   ${table}.archived_at IS NOT NULL AS archived`
 
 const columns = accountColumns("account")
@@ -84,6 +97,7 @@ const termColumns = ({ interestRate, assetMix }: AccountTerms) => {
     equity: percent("equity"),
     bonds: percent("bonds"),
     cash: percent("cash"),
+    crypto: percent("crypto"),
     other: percent("other"),
   }
 }
@@ -113,10 +127,11 @@ export const createAccount = (ownerId: OwnerId, input: unknown) =>
     const accounts = yield* decodeAccounts(
       yield* sql`
         INSERT INTO account (owner_id, name, role, currency, interest_rate_bp,
-                             equity_percent, bonds_percent, cash_percent, other_percent)
+                             equity_percent, bonds_percent, cash_percent, crypto_percent,
+                             other_percent)
         VALUES (${ownerId}, ${details.name}, ${details.role}, ${details.currency},
                 ${terms.interestRateBp}, ${terms.equity}, ${terms.bonds}, ${terms.cash},
-                ${terms.other})
+                ${terms.crypto}, ${terms.other})
         RETURNING ${sql.literal(columns)}
       `,
     )
@@ -145,6 +160,7 @@ export const changeAccount = (ownerId: OwnerId, accountId: string, input: unknow
             equity_percent = ${terms.equity},
             bonds_percent = ${terms.bonds},
             cash_percent = ${terms.cash},
+            crypto_percent = ${terms.crypto},
             other_percent = ${terms.other}
         WHERE owner_id = ${ownerId} AND id = ${id}
         RETURNING ${sql.literal(columns)}

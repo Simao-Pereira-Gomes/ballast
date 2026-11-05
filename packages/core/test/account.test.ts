@@ -68,7 +68,7 @@ describe("decodeNewAccount", () => {
     })
     expect(Result.getOrThrow(result)).toMatchObject({
       interestRate: null,
-      assetMix: { equity: 80, bonds: 20, cash: 0, other: 0 },
+      assetMix: { equity: 80, bonds: 20, cash: 0, crypto: 0, other: 0 },
     })
   })
 })
@@ -126,7 +126,15 @@ describe("decodeAccountChanges", () => {
     it("accepts a single asset class at 100%", () => {
       expect(
         Result.getOrThrow(decodeAccountChanges({ ...investment, assetMix: { equity: "100" } })),
-      ).toMatchObject({ assetMix: { equity: 100, bonds: 0, cash: 0, other: 0 } })
+      ).toMatchObject({ assetMix: { equity: 100, bonds: 0, cash: 0, crypto: 0, other: 0 } })
+    })
+
+    it("keeps crypto apart from the other asset classes", () => {
+      expect(
+        Result.getOrThrow(
+          decodeAccountChanges({ ...investment, assetMix: { equity: "90", crypto: "10" } }),
+        ),
+      ).toMatchObject({ assetMix: { equity: 90, bonds: 0, cash: 0, crypto: 10, other: 0 } })
     })
 
     it("must add up to 100, and says what it adds up to", () => {

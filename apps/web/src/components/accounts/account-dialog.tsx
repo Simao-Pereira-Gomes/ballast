@@ -98,17 +98,13 @@ const textField = (fields: FormData, name: string): string => {
 
 const fieldClassName = "h-12 rounded-2xl bg-secondary px-4 text-base md:text-base dark:bg-secondary"
 
-const blankMix: Record<AssetClass, string> = { equity: "", bonds: "", cash: "", other: "" }
-
+/** The mix as the Owner sees it in the percentage fields: blank when there is none. */
 const mixForInput = (account: Account | undefined): Record<AssetClass, string> => {
-  const mix = account?.assetMix
-  if (mix == null) return blankMix
-  return {
-    equity: `${mix.equity}`,
-    bonds: `${mix.bonds}`,
-    cash: `${mix.cash}`,
-    other: `${mix.other}`,
-  }
+  const mix = account?.assetMix ?? null
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- one entry per asset class, so every key is present
+  return Object.fromEntries(
+    assetClasses.map((assetClass) => [assetClass, mix === null ? "" : `${mix[assetClass]}`]),
+  ) as Record<AssetClass, string>
 }
 
 /** The sum of the shares typed so far, as the core reads them, ignoring any it would reject. */
