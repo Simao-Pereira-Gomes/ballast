@@ -10,6 +10,7 @@ import type { Transaction } from "@ballast/core"
 import { Effect, Schema } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { getAccount } from "./accounts.ts"
+import { listHoldings } from "./holdings.ts"
 import { CurrentOwner } from "./owners.ts"
 
 const TransactionRow = Schema.Struct({
@@ -127,13 +128,17 @@ export const listTransactions = (ownerId: OwnerId, accountId: AccountId) =>
     return transactions
   })
 
-/** One of the current Owner's Accounts, with its balance and Transactions. */
+/**
+ * One of the current Owner's Accounts, with its balance, its Transactions
+ * and, for an Investment, its Holdings.
+ */
 export const accountLedgerOfCurrentOwner = (accountId: string) =>
   Effect.gen(function* () {
     const owner = yield* CurrentOwner
     const account = yield* getAccount(owner.id, accountId)
     const transactions = yield* listTransactions(owner.id, account.id)
-    return { account, transactions }
+    const holdings = yield* listHoldings(owner.id, account.id)
+    return { account, transactions, holdings }
   })
 
 export const addManualTransactionForCurrentOwner = (accountId: string, input: unknown) =>

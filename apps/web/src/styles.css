@@ -47,6 +47,13 @@
   --color-role-reserve: var(--role-reserve);
   --color-role-investment: var(--role-investment);
   --color-role-liability: var(--role-liability);
+
+  /* One colour per Asset Class, for the Asset Mix bar. Always shown next to the class name. */
+  --color-asset-equity: var(--asset-equity);
+  --color-asset-bonds: var(--asset-bonds);
+  --color-asset-cash: var(--asset-cash);
+  --color-asset-crypto: var(--asset-crypto);
+  --color-asset-other: var(--asset-other);
 }
 
 @theme {
@@ -86,6 +93,11 @@
   --role-reserve: oklch(76.9% 0.188 70.08); /* amber-500 */
   --role-investment: oklch(60.6% 0.25 292.717); /* violet-500 */
   --role-liability: oklch(64.5% 0.246 16.439); /* rose-500 */
+  --asset-equity: oklch(54.6% 0.245 262.881); /* blue-600 */
+  --asset-bonds: oklch(59.6% 0.145 163.225); /* emerald-600 */
+  --asset-cash: oklch(70.9% 0.01 56.259); /* stone-400 */
+  --asset-crypto: oklch(76.9% 0.188 70.08); /* amber-500 */
+  --asset-other: oklch(66.7% 0.295 322.15); /* fuchsia-500 */
 }
 
 .dark {
@@ -115,6 +127,11 @@
   --role-reserve: oklch(82.8% 0.189 84.429); /* amber-400 */
   --role-investment: oklch(70.2% 0.183 293.541); /* violet-400 */
   --role-liability: oklch(71.2% 0.194 13.428); /* rose-400 */
+  --asset-equity: oklch(70.7% 0.165 254.624); /* blue-400 */
+  --asset-bonds: oklch(76.5% 0.177 163.223); /* emerald-400 */
+  --asset-cash: oklch(55.3% 0.013 58.071); /* stone-500 */
+  --asset-crypto: oklch(82.8% 0.189 84.429); /* amber-400 */
+  --asset-other: oklch(74% 0.238 322.16); /* fuchsia-400 */
 }
 
 @layer base {

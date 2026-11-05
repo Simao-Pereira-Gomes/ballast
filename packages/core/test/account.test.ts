@@ -1,6 +1,16 @@
-import { Result } from "effect"
+import { Result, Schema } from "effect"
 import { describe, expect, it } from "vitest"
-import { decodeAccountChanges, decodeNewAccount } from "../src/index.ts"
+import {
+  AccountId,
+  Money,
+  OwnerId,
+  amountOwed,
+  decodeAccountChanges,
+  decodeNewAccount,
+  marketGain,
+  netContributions,
+} from "../src/index.ts"
+import type { AccountSummary } from "../src/index.ts"
 
 const problemsOf = (result: Result.Result<unknown, { readonly problems: readonly unknown[] }>) =>
   Result.isFailure(result) ? result.failure.problems : []
@@ -8,7 +18,7 @@ const problemsOf = (result: Result.Result<unknown, { readonly problems: readonly
 const newAccountProblems = (input: unknown) => problemsOf(decodeNewAccount(input))
 const changeProblems = (input: unknown) => problemsOf(decodeAccountChanges(input))
 
-const noTerms = { interestRate: null, assetMix: null }
+const noTerms = { interestRate: null }
 
 describe("decodeNewAccount", () => {
   it("accepts valid details, trimming the name", () => {
@@ -55,27 +65,27 @@ describe("decodeNewAccount", () => {
     })
     expect(Result.getOrThrow(result)).toMatchObject({
       interestRate: { basisPoints: 1850 },
-      assetMix: null,
     })
   })
 
-  it("keeps an Investment's asset-class mix", () => {
+  it("takes no typed terms for an Investment: its Asset Mix comes from Holdings", () => {
     const result = decodeNewAccount({
       name: "Brokerage",
       role: "investment",
       currency: "EUR",
       assetMix: { equity: "80", bonds: "20" },
     })
-    expect(Result.getOrThrow(result)).toMatchObject({
-      interestRate: null,
-      assetMix: { equity: 80, bonds: 20, cash: 0, crypto: 0, other: 0 },
+    expect(Result.getOrThrow(result)).toEqual({
+      name: "Brokerage",
+      role: "investment",
+      currency: "EUR",
+      ...noTerms,
     })
   })
 })
 
 describe("decodeAccountChanges", () => {
   const liability = { name: "Car loan", role: "liability" }
-  const investment = { name: "PPR", role: "investment" }
 
   it("accepts a new name and Role", () => {
     expect(Result.getOrThrow(decodeAccountChanges({ name: " Savings ", role: "reserve" }))).toEqual(
@@ -114,57 +124,52 @@ describe("decodeAccountChanges", () => {
     })
   })
 
-  describe("asset-class mix", () => {
-    it("is optional on an Investment", () => {
-      expect(
-        Result.getOrThrow(
-          decodeAccountChanges({ ...investment, assetMix: { equity: "", bonds: " " } }),
-        ),
-      ).toMatchObject({ assetMix: null })
-    })
-
-    it("accepts a single asset class at 100%", () => {
-      expect(
-        Result.getOrThrow(decodeAccountChanges({ ...investment, assetMix: { equity: "100" } })),
-      ).toMatchObject({ assetMix: { equity: 100, bonds: 0, cash: 0, crypto: 0, other: 0 } })
-    })
-
-    it("keeps crypto apart from the other asset classes", () => {
-      expect(
-        Result.getOrThrow(
-          decodeAccountChanges({ ...investment, assetMix: { equity: "90", crypto: "10" } }),
-        ),
-      ).toMatchObject({ assetMix: { equity: 90, bonds: 0, cash: 0, crypto: 10, other: 0 } })
-    })
-
-    it("must add up to 100, and says what it adds up to", () => {
-      expect(changeProblems({ ...investment, assetMix: { equity: "80", bonds: "30" } })).toEqual([
-        { field: "assetMix", problem: "not_100", total: 110 },
-      ])
-      expect(changeProblems({ ...investment, assetMix: { cash: "0" } })).toEqual([
-        { field: "assetMix", problem: "not_100", total: 0 },
-      ])
-    })
-
-    it("takes whole percentages from 0 to 100 only", () => {
-      for (const equity of ["50.5", "-10", "abc", "101"]) {
-        expect(changeProblems({ ...investment, assetMix: { equity, bonds: "50" } })).toEqual([
-          { field: "assetMix", problem: "invalid" },
-        ])
-      }
-    })
-
-    it("is not kept on other Roles", () => {
-      expect(
-        Result.getOrThrow(decodeAccountChanges({ ...liability, assetMix: { equity: "nonsense" } })),
-      ).toEqual({ ...liability, ...noTerms })
-    })
-  })
-
   it("reports name problems together with problems in the Role's terms", () => {
     expect(changeProblems({ name: "", role: "liability", interestRate: "x" })).toEqual([
       { field: "name", problem: "required" },
       { field: "interestRate", problem: "invalid" },
     ])
+  })
+})
+
+describe("figures by Role", () => {
+  const summary = (
+    role: AccountSummary["role"],
+    balanceCents: bigint,
+    valuationCents: bigint | null = null,
+  ): AccountSummary => ({
+    id: Schema.decodeSync(AccountId)("00000000-0000-4000-8000-000000000000"),
+    ownerId: Schema.decodeSync(OwnerId)("00000000-0000-4000-8000-000000000001"),
+    name: "Account",
+    role,
+    currency: "EUR",
+    interestRate: null,
+    archived: false,
+    balance: Money.eur(balanceCents),
+    valuation:
+      valuationCents === null
+        ? null
+        : {
+            value: Money.eur(valuationCents),
+            oldestValuedOn: Temporal.PlainDate.from("2026-11-01"),
+          },
+  })
+
+  it("an Investment's Market Gain is its Valuation minus its Net Contributions", () => {
+    const investment = summary("investment", 100_000n, 112_500n)
+    expect(netContributions(investment)).toEqual(Money.eur(100_000n))
+    expect(marketGain(investment)).toEqual(Money.eur(12_500n))
+    expect(marketGain(summary("investment", 100_000n, 90_000n))).toEqual(Money.eur(-10_000n))
+  })
+
+  it("has no Market Gain without a Valuation, nor on other Roles", () => {
+    expect(marketGain(summary("investment", 100_000n))).toBeNull()
+    expect(marketGain(summary("reserve", 100_000n, 1n))).toBeNull()
+    expect(netContributions(summary("reserve", 100_000n))).toBeNull()
+  })
+
+  it("a Liability owes its balance with the sign flipped", () => {
+    expect(amountOwed(summary("liability", -30_000n))).toEqual(Money.eur(30_000n))
+    expect(amountOwed(summary("operating_cash", -30_000n))).toBeNull()
   })
 })

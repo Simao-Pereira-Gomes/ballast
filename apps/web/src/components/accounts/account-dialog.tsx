@@ -1,5 +1,5 @@
-import { accountRoles, assetClasses, parseAssetShare } from "@ballast/core"
-import type { Account, AccountProblem, AccountRole, AssetClass } from "@ballast/core"
+import { accountRoles } from "@ballast/core"
+import type { Account, AccountProblem, AccountRole } from "@ballast/core"
 import { useRef, useState } from "react"
 import type { SubmitEvent } from "react"
 import { Button } from "@/components/ui/button.tsx"
@@ -17,7 +17,7 @@ import { sheetContentClassName, sheetHandleClassName } from "@/components/shell/
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleDescription, accountRoleLabel } from "@/ui/account-role.ts"
-import { assetClassDescription, assetClassLabel, interestRateForInput } from "@/ui/account-terms.ts"
+import { interestRateForInput } from "@/ui/account-terms.ts"
 import { defaultCurrency } from "@/ui/currency.ts"
 import { accountProblemMessage } from "@/ui/problems.ts"
 import { RoleDot } from "./role-dot.tsx"
@@ -28,7 +28,6 @@ export interface AccountFormDetails {
   readonly role: string
   readonly currency: string
   readonly interestRate: string
-  readonly assetMix: Readonly<Record<AssetClass, string>>
 }
 
 export type AccountOutcome =
@@ -98,19 +97,6 @@ const textField = (fields: FormData, name: string): string => {
 
 const fieldClassName = "h-12 rounded-2xl bg-secondary px-4 text-base md:text-base dark:bg-secondary"
 
-/** The mix as the Owner sees it in the percentage fields: blank when there is none. */
-const mixForInput = (account: Account | undefined): Record<AssetClass, string> => {
-  const mix = account?.assetMix ?? null
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- one entry per asset class, so every key is present
-  return Object.fromEntries(
-    assetClasses.map((assetClass) => [assetClass, mix === null ? "" : `${mix[assetClass]}`]),
-  ) as Record<AssetClass, string>
-}
-
-/** The sum of the shares typed so far, as the core reads them, ignoring any it would reject. */
-const totalOf = (mix: Readonly<Record<AssetClass, string>>): number =>
-  assetClasses.reduce((sum, assetClass) => sum + (parseAssetShare(mix[assetClass]) ?? 0), 0)
-
 /** Mounted only while the dialog is open, so each opening starts from its Account. */
 function AccountForm({
   mode,
@@ -123,17 +109,15 @@ function AccountForm({
 }>) {
   const existing = mode.kind === "edit" ? mode.account : undefined
   const [role, setRole] = useState<AccountRole | undefined>(existing?.role)
-  const [mix, setMix] = useState(() => mixForInput(existing))
   const [problems, setProblems] = useState<readonly AccountProblem[]>([])
   const [busy, setBusy] = useState<"saving" | "archiving" | undefined>()
   const nameRef = useRef<HTMLInputElement>(null)
   const firstRoleRef = useRef<HTMLInputElement>(null)
   const rateRef = useRef<HTMLInputElement>(null)
-  const firstPercentRef = useRef<HTMLInputElement>(null)
 
   const problemFor = (field: AccountProblem["field"]) =>
     problems.find((problem) => problem.field === field)
-  const shownFields = new Set<AccountProblem["field"]>(["name", "role", "interestRate", "assetMix"])
+  const shownFields = new Set<AccountProblem["field"]>(["name", "role", "interestRate"])
   const otherProblems = problems.filter((problem) => !shownFields.has(problem.field))
   const describedBy = (field: AccountProblem["field"]) =>
     problemFor(field) ? `account-${field}-problem` : undefined
@@ -158,7 +142,6 @@ function AccountForm({
         role: textField(fields, "role"),
         currency: textField(fields, "currency"),
         interestRate: textField(fields, "interestRate"),
-        assetMix: mix,
       })
       if (outcome.ok) {
         onDone()
@@ -171,7 +154,6 @@ function AccountForm({
         ["name", nameRef],
         ["role", firstRoleRef],
         ["interestRate", rateRef],
-        ["assetMix", firstPercentRef],
       ] as const
       first.find(([field]) => invalid.has(field))?.[1].current?.focus()
     } finally {
@@ -282,51 +264,7 @@ function AccountForm({
       )}
 
       {role === "investment" && (
-        <fieldset aria-describedby={cn("account-asset-mix-hint", describedBy("assetMix"))}>
-          <legend className="text-sm font-medium">{m.asset_mix()}</legend>
-          <p id="account-asset-mix-hint" className="mt-1 text-xs text-muted-foreground">
-            {m.asset_mix_hint()}
-          </p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {assetClasses.map((assetClass, index) => (
-              <div key={assetClass} className="space-y-1">
-                <Label htmlFor={`account-mix-${assetClass}`}>{assetClassLabel(assetClass)}</Label>
-                <div className="relative">
-                  <Input
-                    ref={index === 0 ? firstPercentRef : undefined}
-                    id={`account-mix-${assetClass}`}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder="0"
-                    value={mix[assetClass]}
-                    onChange={(event) => {
-                      setMix({ ...mix, [assetClass]: event.target.value })
-                    }}
-                    aria-invalid={problemFor("assetMix") !== undefined}
-                    aria-describedby={`account-mix-${assetClass}-description`}
-                    className={cn(fieldClassName, "pr-10")}
-                  />
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-y-0 right-4 grid place-items-center text-muted-foreground"
-                  >
-                    %
-                  </span>
-                </div>
-                <p
-                  id={`account-mix-${assetClass}-description`}
-                  className="text-xs text-muted-foreground"
-                >
-                  {assetClassDescription(assetClass)}
-                </p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-sm font-medium tabular-nums" aria-live="polite">
-            {m.asset_mix_total({ total: totalOf(mix) })}
-          </p>
-          {problemText("assetMix")}
-        </fieldset>
+        <p className="text-sm text-muted-foreground">{m.investment_holdings_hint()}</p>
       )}
 
       {existing === undefined && (

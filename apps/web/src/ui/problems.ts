@@ -13,6 +13,7 @@ const name: Record<CodesFor<"name">, () => string> = {
 }
 const role: Record<CodesFor<"role">, () => string> = {
   required: m.problem_role_required,
+  has_holdings: m.problem_role_has_holdings,
 }
 const currency: Record<CodesFor<"currency">, () => string> = {
   unsupported: m.problem_currency_unsupported,
@@ -26,8 +27,5 @@ export const accountProblemMessage = (problem: AccountProblem): string => {
   if (problem.field === "name") return name[problem.problem]()
   if (problem.field === "role") return role[problem.problem]()
   if (problem.field === "currency") return currency[problem.problem]()
-  if (problem.field === "interestRate") return interestRate[problem.problem]()
-  return problem.problem === "not_100"
-    ? m.problem_asset_mix_not_100({ total: problem.total })
-    : m.problem_asset_mix_invalid()
+  return interestRate[problem.problem]()
 }

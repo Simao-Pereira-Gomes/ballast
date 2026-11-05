@@ -33,7 +33,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 4. As the Owner, I want to change an Account's Role later, so that advice follows how I actually use the Account.
 5. As the Owner, I want to record each Account's currency (EUR in v1), so that foreign-currency Accounts can be added later without a migration.
 6. As the Owner, I want to record the interest rate on a Liability, so that Ballast can tell whether it is High-Interest Debt.
-7. As the Owner, I want to tag an Investment Account with its asset-class mix (e.g. 100% equity), so that Ballast can compare my Investments to the Target Allocation.
+7. As the Owner, I want to record the Holdings in an Investment Account and what each is worth, so that Ballast computes my asset-class mix from the money actually invested and can compare it to the Target Allocation.
 8. As the Owner, I want to archive an Account I closed, so that its history remains but it no longer appears in advice.
 
 ### Import
@@ -88,7 +88,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 41. As the Owner, I want Expenses broken down by Category and by Essential vs non-Essential, so that I know where money goes and what I could cut.
 42. As the Owner, I want my savings rate (Net Savings ÷ Revenue) per month, so that I can track progress.
 43. As the Owner, I want Transfers excluded from all Revenue and Expense figures, so that reports reflect reality.
-44. As the Owner, I want to record Valuations for Investment Accounts, so that their current value is known.
+44. As the Owner, I want an Investment Account's Valuation to be the sum of its Holdings' values, so that its current value is known without entering it twice.
 45. As the Owner, I want market gains and losses excluded from Revenue, so that market moves don't distort my savings rate.
 46. As the Owner, I want dividends and interest paid out in cash counted as Revenue, so that real cash income is captured.
 47. As the Owner, I want to see my Net Worth over time, so that I see the long-term picture.
@@ -166,7 +166,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - **Recurring Detector**: given history, it proposes Recurring Item candidates with counterparty, cadence (monthly, quarterly, yearly, or the Portuguese twice-yearly subsídio pattern), expected amount and next date.
 - **Forecaster**: given history, confirmed Recurring Items and an as-of date, it returns 12 monthly projections of Revenue, Expenses (split Essential / non-Essential) and Net Savings. Recurring Items are placed on their dates. Variable Spending per Category uses a recency-weighted trailing average with a trend term. It also returns the forward 12-month Essential average used by the Essential Baseline. No seasonality or ML in v1.
 - **Advisor**: given a Rule Set version, Financial Profile, balances grouped by Account Role, Liabilities with rates and the Essential Baseline, it returns an Allocation Status (per waterfall step: target, current, gap) and can produce a Recommendation (concrete Transfers across Wrappers plus Target Allocation guidance). Both carry a structured, step-by-step explanation. The waterfall order is fixed: Operating Cash → Starter Reserve → High-Interest Debt → Reserve → Investable Surplus.
-- **Rule Set**: versioned, immutable parameter sets. Parameters: Operating Cash target (months of total Expenses), Starter Reserve (months of Essential Baseline), base reserve months, Financial Profile modifiers (employment type, dependents, household incomes), reserve-month cap, High-Interest Debt threshold (APR), PPR deduction rate and caps by age band, Target Allocation formula, and Reserve-eligibility notes. Editing creates a new version. The default version encodes Portuguese guidance.
+- **Rule Set**: versioned, immutable parameter sets. Parameters: Operating Cash target (months of total Expenses), Starter Reserve (months of Essential Baseline), base reserve months, Financial Profile modifiers (employment type, dependents, household incomes), reserve-month cap, High-Interest Debt threshold (APR), Concentration Limit, PPR deduction rate and caps by age band, Target Allocation formula, and Reserve-eligibility notes. Editing creates a new version. The default version encodes Portuguese guidance.
 
 ### Shell modules
 
@@ -195,7 +195,7 @@ All terms in bold are defined in `CONTEXT.md`, and the code uses them exactly.
 - PDF statement import, including Santander's PDF export (ADR 0005).
 - Authentication, multiple Owners in practice and hosted deployment (the model supports them, but v1 doesn't ship them).
 - Multiple currencies and FX (Accounts record a currency, but only EUR is supported).
-- Per-holding investment tracking and live price feeds (Valuations are per Account and entered manually or taken from exports).
+- Live price feeds. Holdings and their values are entered manually (ADR 0007); Holdings record units and a ticker so a market data feed can be added later.
 - Naming specific investment products, executing trades or moving money.
 - ML/LLM categorisation suggestions.
 - Seasonality-aware or ML forecasting.

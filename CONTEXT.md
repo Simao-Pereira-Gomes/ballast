@@ -97,9 +97,19 @@ _Avoid_: Reconciliation error, drift
 _pt-PT_: **Discrepância de saldo** · _Evitar_: Erro de reconciliação
 
 **Valuation**:
-A dated market value of an Investment Account. Changes in Valuation not explained by Transfers are market gains or losses, which are never Revenue or Expense.
+The market value of an Investment Account: the sum of its Holdings' latest values. It is only as current as its oldest Holding value. Changes in Valuation not explained by Transfers are market gains or losses, which are never Revenue or Expense.
 _Avoid_: Price, mark, snapshot
 _pt-PT_: **Valor de mercado** · _Evitar_: Avaliação, Valorização, Cotação
+
+**Net Contributions**:
+The money the Owner has put into an Investment Account minus what they have taken out: the net of its Transactions, mostly Transfers.
+_Avoid_: Invested amount, cost basis, balance (for an Investment)
+_pt-PT_: **Contribuições líquidas** · _Evitar_: Montante investido, Saldo
+
+**Market Gain**:
+An Investment Account's Valuation minus its Net Contributions; negative for a loss. Never Revenue or Expense.
+_Avoid_: Profit, return, earnings
+_pt-PT_: **Ganho de mercado** · _Evitar_: Lucro, Rendimento, Rentabilidade
 
 **Net Worth**:
 The sum of all Account balances and latest Valuations, minus Liability balances. A reporting figure only; it never feeds the Allocation Waterfall.
@@ -142,9 +152,24 @@ _Avoid_: Asset type, instrument, product
 _pt-PT_: **Classe de ativos** · _Evitar_: Tipo de ativo, Produto
 
 **Asset Mix**:
-How an Investment Account splits across Asset Classes, in whole percentages adding up to 100 (e.g. 80% equity, 20% bonds). Compared with the Target Allocation.
+How Investment money splits across Asset Classes, computed from Holding values (e.g. €8,000 in equity and €2,000 in bonds is 80% equity, 20% bonds). Computed per Account and across all Investment; never typed in or stored. Compared with the Target Allocation.
 _Avoid_: Portfolio mix, breakdown
 _pt-PT_: **Composição por classe de ativos** · _Evitar_: Mix da carteira
+
+**Holding**:
+Something the Owner owns inside an Investment Account, with an Asset Class and a dated current value: an index fund (an ETF or fund that tracks a named Index; its own name is optional, and without one it is called by its Index), an individual stock (always equity), or anything else (a crypto-asset, a bond, an actively managed fund). It may also record how many units are held and a ticker, so prices can later come from a market data feed. Recording what the Owner already holds is not advice; Recommendations still never name products.
+_Avoid_: Position (as an English term), asset, investment (for one item), product
+_pt-PT_: **Posição** · _Evitar_: Ativo, Produto, Investimento (para um só)
+
+**Index**:
+The market index an index fund tracks, e.g. MSCI World, S&P 500 or a euro government bond index. Holdings tracking the same Index are added up together.
+_Avoid_: Benchmark, tracker
+_pt-PT_: **Índice** · _Evitar_: Referência, Benchmark
+
+**Concentration Limit**:
+The largest share of all Investment that any single stock should be (by default 10%). A stock above it is flagged as concentrated. A Rule Set parameter.
+_Avoid_: Exposure cap, diversification rule
+_pt-PT_: **Limite de concentração** · _Evitar_: Limite de exposição
 
 **Liability**:
 An Account representing money the Owner owes (credit card carrying a balance, personal loan, car loan, mortgage), with an interest rate.
@@ -187,7 +212,7 @@ _Avoid_: Advice (as a noun), suggestion, plan
 _pt-PT_: **Recomendação** · _Evitar_: Conselho, Sugestão
 
 **Wrapper**:
-A legal/tax container for Investment, such as a PPR or an ordinary brokerage account. Advice names Wrappers and asset classes, never specific products.
+A legal/tax container for Investment, such as a PPR or an ordinary brokerage account. Advice names Wrappers and asset classes, never specific products, even though Holdings record the products the Owner already holds.
 _Avoid_: Vehicle, product, fund
 _pt-PT_: **Enquadramento fiscal** · _Evitar_: Veículo, Produto
 
