@@ -1,13 +1,15 @@
 import { directionOf } from "@ballast/core"
 import type { AccountSummary, Transaction } from "@ballast/core"
 import { Link } from "@tanstack/react-router"
-import { ChevronLeft, Plus, ReceiptText } from "lucide-react"
+import { Archive, ChevronLeft, Pencil, Plus, ReceiptText } from "lucide-react"
 import { useRef, useState } from "react"
+import { AccountDialog } from "@/components/accounts/account-dialog.tsx"
+import type { AccountFormDetails, AccountOutcome } from "@/components/accounts/account-dialog.tsx"
+import { AccountSummaryLine } from "@/components/accounts/account-summary-line.tsx"
 import { RoleDot } from "@/components/accounts/role-dot.tsx"
 import { Button } from "@/components/ui/button.tsx"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
-import { accountRoleLabel } from "@/ui/account-role.ts"
 import { formatDay, formatMoney } from "@/ui/format.ts"
 import { TransactionDialog } from "./transaction-dialog.tsx"
 import type {
@@ -20,7 +22,8 @@ import type {
 /**
  * One Account: its balance, computed from its Transactions, and the
  * Transactions themselves, newest first. Manual Transactions can be edited
- * and deleted; the ways to add one mirror the Accounts page.
+ * and deleted; the ways to add one mirror the Accounts page. The Account
+ * itself can be edited and archived, and an archived one unarchived.
  */
 export function AccountLedgerPage({
   account,
@@ -28,14 +31,22 @@ export function AccountLedgerPage({
   onAdd,
   onEdit,
   onDelete,
+  onChangeAccount,
+  onArchive,
+  onUnarchive,
 }: Readonly<{
   account: AccountSummary
   transactions: readonly Transaction[]
   onAdd: (details: TransactionFormDetails) => Promise<TransactionOutcome>
   onEdit: (transaction: Transaction, details: TransactionFormDetails) => Promise<TransactionOutcome>
   onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
+  onChangeAccount: (details: AccountFormDetails) => Promise<AccountOutcome>
+  onArchive: () => Promise<void>
+  onUnarchive: () => Promise<void>
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false)
+  const [unarchiving, setUnarchiving] = useState(false)
   const [mode, setMode] = useState<TransactionDialogMode>({ kind: "add" })
   const [alreadyGone, setAlreadyGone] = useState(false)
   const opener = useRef<HTMLElement | null>(null)
@@ -58,6 +69,20 @@ export function AccountLedgerPage({
     openDialog({ kind: "add" })
   }
 
+  const startEditingAccount = () => {
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setAccountDialogOpen(true)
+  }
+
+  const unarchive = async () => {
+    setUnarchiving(true)
+    try {
+      await onUnarchive()
+    } finally {
+      setUnarchiving(false)
+    }
+  }
+
   return (
     <main className="mx-auto w-full max-w-5xl px-5 pt-6 pb-40 md:px-10 md:pt-10 md:pb-12">
       <Link
@@ -73,22 +98,44 @@ export function AccountLedgerPage({
           <h1 ref={heading} tabIndex={-1} className="truncate text-title outline-none">
             {account.name}
           </h1>
-          <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
             <RoleDot role={account.role} className="size-2.5" />
-            {m.account_summary({
-              role: accountRoleLabel(account.role),
-              currency: account.currency,
-            })}
-          </p>
+            <AccountSummaryLine account={account} />
+          </div>
         </div>
-        <Button
-          className="hidden h-12 rounded-2xl px-5 text-base font-semibold shadow-sm md:inline-flex"
-          onClick={startAdding}
-        >
-          <Plus aria-hidden />
-          {m.add_transaction()}
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            variant="secondary"
+            aria-label={m.edit_account()}
+            className="size-12 rounded-2xl"
+            onClick={startEditingAccount}
+          >
+            <Pencil aria-hidden />
+          </Button>
+          <Button
+            className="hidden h-12 rounded-2xl px-5 text-base font-semibold shadow-sm md:inline-flex"
+            onClick={startAdding}
+          >
+            <Plus aria-hidden />
+            {m.add_transaction()}
+          </Button>
+        </div>
       </div>
+
+      {account.archived && (
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl bg-secondary px-5 py-3 text-sm text-secondary-foreground">
+          <Archive className="size-4 shrink-0" aria-hidden />
+          <p className="min-w-0 flex-1">{m.account_archived_notice()}</p>
+          <Button
+            variant="outline"
+            disabled={unarchiving}
+            className="h-10 rounded-xl"
+            onClick={() => void unarchive()}
+          >
+            {unarchiving ? m.unarchiving_account() : m.unarchive_account()}
+          </Button>
+        </div>
+      )}
 
       <section aria-labelledby="balance-heading" className="mt-6 rounded-3xl bg-card p-5 shadow-sm">
         <h2 id="balance-heading" className="text-sm font-medium text-muted-foreground">
@@ -151,6 +198,14 @@ export function AccountLedgerPage({
         onGone={() => {
           setAlreadyGone(true)
         }}
+        onCloseAutoFocus={onCloseAutoFocus}
+      />
+
+      <AccountDialog
+        open={accountDialogOpen}
+        mode={{ kind: "edit", account, onArchive }}
+        onOpenChange={setAccountDialogOpen}
+        onSubmit={onChangeAccount}
         onCloseAutoFocus={onCloseAutoFocus}
       />
     </main>

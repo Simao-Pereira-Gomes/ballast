@@ -156,3 +156,55 @@ test("the Owner is told when a Transaction was already deleted in another tab", 
   await expect(market).toBeHidden()
   await expect(page.getByRole("region", { name: "Balance" })).toContainText("€0.00")
 })
+
+test("the Owner changes an Account's Role and terms, then archives and unarchives it", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await page.getByRole("button", { name: "Open Account" }).click()
+  const openDialog = page.getByRole("dialog", { name: "Open an Account" })
+  await openDialog.getByLabel("Name").fill("Old card")
+  await openDialog.getByRole("radio", { name: /Liability/ }).check()
+  await openDialog.getByLabel("Interest rate (APR)").fill("18.5")
+  await openDialog.getByRole("button", { name: "Open Account" }).click()
+  await expect(openDialog).toBeHidden()
+
+  const accounts = page.getByRole("region", { name: "Your Accounts" })
+  const card = accounts.getByRole("link", { name: /Old card/ })
+  await expect(card).toContainText("Liability · EUR · 18.5% APR")
+  await card.click()
+
+  await page.getByRole("button", { name: "Edit Account" }).click()
+  const editDialog = page.getByRole("dialog", { name: "Edit Account" })
+  await expect(editDialog.getByLabel("Interest rate (APR)")).toHaveValue("18.5")
+  await editDialog.getByRole("radio", { name: /Investment/ }).check()
+  await expect(editDialog.getByLabel("Interest rate (APR)")).toBeHidden()
+  await editDialog.getByLabel("Equity").fill("80")
+  await editDialog.getByLabel("Bonds").fill("30")
+  await expect(editDialog.getByText("Total: 110%")).toBeVisible()
+  await editDialog.getByRole("button", { name: "Save" }).click()
+  await expect(editDialog.getByText("The percentages must add up to 100 (now 110)")).toBeVisible()
+  await expect(editDialog.getByLabel("Equity")).toBeFocused()
+
+  await editDialog.getByLabel("Bonds").fill("20")
+  await editDialog.getByRole("button", { name: "Save" }).click()
+  await expect(editDialog).toBeHidden()
+  await expect(page.getByText("Investment · EUR · 80% Equity · 20% Bonds")).toBeVisible()
+
+  await page.getByRole("button", { name: "Edit Account" }).click()
+  await editDialog.getByRole("button", { name: "Archive Account" }).click()
+  await expect(editDialog).toBeHidden()
+  await expect(page.getByText("This Account is archived.", { exact: false })).toBeVisible()
+
+  await page.getByRole("link", { name: "Accounts", exact: true }).first().click()
+  await expect(accounts.getByRole("link", { name: /Old card/ })).toBeHidden()
+  const archived = page.getByRole("region", { name: "Archived Accounts" })
+  await archived.getByRole("button", { name: "Archived Accounts · 1" }).click()
+  await archived.getByRole("link", { name: /Old card/ }).click()
+
+  await page.getByRole("button", { name: "Unarchive" }).click()
+  await expect(page.getByText("This Account is archived.", { exact: false })).toBeHidden()
+  await page.getByRole("link", { name: "Accounts", exact: true }).first().click()
+  await expect(accounts.getByRole("link", { name: /Old card/ })).toBeVisible()
+  await expect(page.getByRole("region", { name: "Archived Accounts" })).toBeHidden()
+})

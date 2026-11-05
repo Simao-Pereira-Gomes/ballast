@@ -3,22 +3,24 @@ import { Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button.tsx"
 import { m } from "@/paraglide/messages.js"
-import { AccountList } from "./account-list.tsx"
+import { AccountList, ArchivedAccounts } from "./account-list.tsx"
 import { EmptyAccounts } from "./empty-accounts.tsx"
-import { OpenAccountDialog } from "./open-account-dialog.tsx"
-import type { OpenAccountDetails, OpenAccountOutcome } from "./open-account-dialog.tsx"
+import { AccountDialog } from "./account-dialog.tsx"
+import type { AccountFormDetails, AccountOutcome } from "./account-dialog.tsx"
 
 /**
- * The Accounts page: cards with role filters, or the empty state, and the
- * ways to open an Account (header button on larger screens, floating button
- * on phones).
+ * The Accounts page: active Account cards with role filters, or the empty
+ * state, the archived Accounts behind a toggle, and the ways to open an
+ * Account (header button on larger screens, floating button on phones).
  */
 export function AccountsPage({
   accounts,
+  archivedAccounts,
   onOpenAccount,
 }: Readonly<{
   accounts: readonly AccountSummary[]
-  onOpenAccount: (details: OpenAccountDetails) => Promise<OpenAccountOutcome>
+  archivedAccounts: readonly AccountSummary[]
+  onOpenAccount: (details: AccountFormDetails) => Promise<AccountOutcome>
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const opener = useRef<HTMLElement | null>(null)
@@ -50,11 +52,15 @@ export function AccountsPage({
         </Button>
       </div>
 
-      {accounts.length === 0 ? (
-        <EmptyAccounts onOpenAccount={startOpening} />
-      ) : (
+      {accounts.length > 0 ? (
         <AccountList accounts={accounts} />
+      ) : archivedAccounts.length > 0 ? (
+        <p className="py-10 text-center text-muted-foreground">{m.no_active_accounts()}</p>
+      ) : (
+        <EmptyAccounts onOpenAccount={startOpening} />
       )}
+
+      {archivedAccounts.length > 0 && <ArchivedAccounts accounts={archivedAccounts} />}
 
       <Button
         aria-label={m.open_account()}
@@ -64,8 +70,9 @@ export function AccountsPage({
         <Plus aria-hidden />
       </Button>
 
-      <OpenAccountDialog
+      <AccountDialog
         open={dialogOpen}
+        mode={{ kind: "open" }}
         onOpenChange={setDialogOpen}
         onSubmit={onOpenAccount}
         onCloseAutoFocus={onCloseAutoFocus}

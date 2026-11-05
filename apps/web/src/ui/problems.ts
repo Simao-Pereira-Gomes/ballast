@@ -17,10 +17,17 @@ const role: Record<CodesFor<"role">, () => string> = {
 const currency: Record<CodesFor<"currency">, () => string> = {
   unsupported: m.problem_currency_unsupported,
 }
+const interestRate: Record<CodesFor<"interestRate">, () => string> = {
+  invalid: m.problem_interest_rate_invalid,
+}
 
 /** The message for a problem code from the core, in the interface language (ADR 0006). */
 export const accountProblemMessage = (problem: AccountProblem): string => {
   if (problem.field === "name") return name[problem.problem]()
   if (problem.field === "role") return role[problem.problem]()
-  return currency[problem.problem]()
+  if (problem.field === "currency") return currency[problem.problem]()
+  if (problem.field === "interestRate") return interestRate[problem.problem]()
+  return problem.problem === "not_100"
+    ? m.problem_asset_mix_not_100({ total: problem.total })
+    : m.problem_asset_mix_invalid()
 }
