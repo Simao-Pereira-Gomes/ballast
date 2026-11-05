@@ -1,5 +1,6 @@
 import { Data, Result, Schema, SchemaIssue } from "effect"
 import { Currency } from "./money.ts"
+import type { Money } from "./money.ts"
 import type { OwnerId } from "./owner.ts"
 
 export const AccountId = Schema.String.check(Schema.isUUID()).pipe(Schema.brand("AccountId"))
@@ -67,3 +68,13 @@ export const decodeNewAccount = (input: unknown): Result.Result<NewAccount, Inva
         }),
     ),
   )
+
+/** An Account with its balance: the sum of its Transactions. */
+export interface AccountSummary extends Account {
+  readonly balance: Money
+}
+
+/** No Account with this id belongs to the Owner. */
+export class AccountNotFound extends Data.TaggedError("AccountNotFound")<{
+  readonly accountId: string
+}> {}

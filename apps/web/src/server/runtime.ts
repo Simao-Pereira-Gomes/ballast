@@ -1,5 +1,4 @@
-import { InvalidAccount } from "@ballast/core"
-import type { AccountProblem } from "@ballast/core"
+import { InvalidAccount, InvalidTransaction } from "@ballast/core"
 import { Effect, Layer, ManagedRuntime, Schedule } from "effect"
 import type { SqlClient } from "effect/sql/SqlClient"
 import { DatabaseLive } from "./database.ts"
@@ -27,27 +26,35 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.once(signal, () => void runtime.dispose())
 }
 
-export type ActionResult<A> =
-  | { readonly ok: true; readonly value: A }
-  | { readonly ok: false; readonly problems: readonly AccountProblem[] }
-
 /** Errors the Owner can fix by changing what they submitted. */
-type Fixable = InvalidAccount
+type Fixable = InvalidAccount | InvalidTransaction
 
-const isFixable = (error: unknown): error is Fixable => error instanceof InvalidAccount
+const isFixable = (error: unknown): error is Fixable =>
+  error instanceof InvalidAccount || error instanceof InvalidTransaction
+
+/** The problems an action's fixable errors can name. */
+type ProblemsOf<E> = E extends Fixable ? E["problems"][number] : never
+
+export type ActionResult<A, P> =
+  { readonly ok: true; readonly value: A } | { readonly ok: false; readonly problems: readonly P[] }
 
 export const runQuery = <A, E>(effect: Effect.Effect<A, E, AppServices>): Promise<A> =>
   runtime.runPromise(effect)
 
 export const runAction = <A, E>(
   effect: Effect.Effect<A, E, AppServices>,
-): Promise<ActionResult<A>> =>
+): Promise<ActionResult<A, ProblemsOf<E>>> =>
   runtime.runPromise(
     effect.pipe(
-      Effect.map((value): ActionResult<A> => ({ ok: true, value })),
+      Effect.map((value): ActionResult<A, ProblemsOf<E>> => ({ ok: true, value })),
       Effect.catchIf(
         (error: E): error is E & Fixable => isFixable(error),
-        (error) => Effect.succeed<ActionResult<A>>({ ok: false, problems: error.problems }),
+        (error) =>
+          Effect.succeed<ActionResult<A, ProblemsOf<E>>>({
+            ok: false,
+            // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `error` is the part of E that is Fixable, so its problems are ProblemsOf<E>
+            problems: error.problems as readonly ProblemsOf<E>[],
+          }),
       ),
     ),
   )

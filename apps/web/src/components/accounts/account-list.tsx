@@ -1,14 +1,16 @@
 import { accountRoles } from "@ballast/core"
-import type { Account } from "@ballast/core"
+import type { AccountSummary } from "@ballast/core"
+import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { accountsWithRole, countByRole } from "@/ui/account-filter.ts"
 import type { RoleFilter } from "@/ui/account-filter.ts"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleLabel } from "@/ui/account-role.ts"
+import { formatMoney } from "@/ui/format.ts"
 import { RoleDot } from "./role-dot.tsx"
 
-export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[] }>) {
+export function AccountList({ accounts }: Readonly<{ accounts: readonly AccountSummary[] }>) {
   const [filter, setFilter] = useState<RoleFilter>("all")
   const counts = countByRole(accounts)
   const shown = accountsWithRole(accounts, filter)
@@ -48,20 +50,26 @@ export function AccountList({ accounts }: Readonly<{ accounts: readonly Account[
       ) : (
         <ul className="mt-6 grid gap-3 lg:grid-cols-2">
           {shown.map((account) => (
-            <li
-              key={account.id}
-              className="flex items-center gap-4 rounded-2xl bg-card p-4 text-card-foreground shadow-sm"
-            >
-              <RoleDot role={account.role} className="size-3" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-lg font-semibold">{account.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {m.account_summary({
-                    role: accountRoleLabel(account.role),
-                    currency: account.currency,
-                  })}
+            <li key={account.id}>
+              <Link
+                to="/accounts/$accountId"
+                params={{ accountId: account.id }}
+                className="flex items-center gap-4 rounded-2xl bg-card p-4 text-card-foreground shadow-sm transition-colors outline-ring hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                <RoleDot role={account.role} className="size-3" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-lg font-semibold">{account.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {m.account_summary({
+                      role: accountRoleLabel(account.role),
+                      currency: account.currency,
+                    })}
+                  </p>
+                </div>
+                <p className="shrink-0 text-lg font-semibold tabular-nums">
+                  {formatMoney(account.balance)}
                 </p>
-              </div>
+              </Link>
             </li>
           ))}
         </ul>

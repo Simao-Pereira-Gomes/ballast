@@ -1,3 +1,4 @@
+import { Money } from "@ballast/core"
 import { layer } from "@effect/vitest"
 import { Effect } from "effect"
 import { assert, expect } from "vitest"
@@ -21,7 +22,7 @@ layer(TestDatabase)("Accounts", (it) => {
         role: "operating_cash",
         currency: "EUR",
       })
-      expect(yield* listAccounts(owner)).toEqual([account])
+      expect(yield* listAccounts(owner)).toEqual([{ ...account, balance: Money.eur(0n) }])
     }),
   )
 
@@ -57,8 +58,8 @@ layer(TestDatabase)("Accounts", (it) => {
         currency: "EUR",
       })
 
-      expect(yield* listAccounts(alice)).toEqual([alicesAccount])
-      expect(yield* listAccounts(bob)).toEqual([bobsAccount])
+      expect(yield* listAccounts(alice)).toEqual([{ ...alicesAccount, balance: Money.eur(0n) }])
+      expect(yield* listAccounts(bob)).toEqual([{ ...bobsAccount, balance: Money.eur(0n) }])
     }),
   )
 })

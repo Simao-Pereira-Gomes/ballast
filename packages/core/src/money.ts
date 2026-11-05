@@ -29,6 +29,22 @@ export const subtract = (a: Money, b: Money): Money => ({
   currency: a.currency,
 })
 
+export const negate = (money: Money): Money => ({ cents: -money.cents, currency: money.currency })
+
+const decimalAmount = /^(\d+)(?:[.,](\d{1,2}))?$/
+
+/**
+ * Reads an amount the Owner typed: whole units with up to two decimals,
+ * after a point or a comma ("12", "12.3", "12,34"). No sign and no
+ * thousands separators. Returns `undefined` when the text isn't such an amount.
+ */
+export const parse = (text: string, currency: Currency): Money | undefined => {
+  const match = decimalAmount.exec(text.trim())
+  if (match === null) return undefined
+  const [, units = "0", fraction = ""] = match
+  return { cents: BigInt(units) * 100n + BigInt(fraction.padEnd(2, "0")), currency }
+}
+
 export const Order: O.Order<Money> = O.mapInput(O.BigInt, (money: Money) => money.cents)
 
 /**
@@ -97,4 +113,16 @@ export const format = (money: Money, locale: Locale): string => {
   const decimal = `${negative ? "-" : ""}${digits.slice(0, -2)}.${digits.slice(-2)}`
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- built from a bigint's digits, so always a valid numeric literal
   return formatterFor(money.currency, locale).format(decimal as Intl.StringNumericLiteral)
+}
+
+const decimalSeparator: Record<Locale, string> = { en: ".", "pt-PT": "," }
+
+/**
+ * Writes an amount the way the Owner would type it into an amount field:
+ * absolute value, the locale's decimal separator, no symbol or grouping,
+ * e.g. "1234,56" (pt-PT). `parse` reads it back.
+ */
+export const formatForInput = (money: Money, locale: Locale): string => {
+  const digits = (money.cents < 0n ? -money.cents : money.cents).toString().padStart(3, "0")
+  return `${digits.slice(0, -2)}${decimalSeparator[locale]}${digits.slice(-2)}`
 }

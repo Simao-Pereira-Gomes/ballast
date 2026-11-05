@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog.tsx"
 import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
+import { sheetContentClassName, sheetHandleClassName } from "@/components/shell/sheet.ts"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
 import { accountRoleDescription, accountRoleLabel } from "@/ui/account-role.ts"
@@ -50,14 +51,9 @@ export function OpenAccountDialog({
       <DialogContent
         {...(onCloseAutoFocus ? { onCloseAutoFocus } : {})}
         closeLabel={m.close()}
-        className={cn(
-          "max-h-[92dvh] gap-5 overflow-y-auto rounded-3xl border-0 bg-card p-6",
-          // Phones: a sheet along the bottom edge, clear of the home indicator.
-          "max-w-none sm:max-w-none md:max-w-lg max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-b-none max-md:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
-          "max-md:data-[state=closed]:slide-out-to-bottom max-md:data-[state=closed]:zoom-out-100 max-md:data-[state=open]:slide-in-from-bottom max-md:data-[state=open]:zoom-in-100",
-        )}
+        className={sheetContentClassName}
       >
-        <div aria-hidden className="mx-auto -mt-2 h-1.5 w-12 rounded-full bg-input md:hidden" />
+        <div aria-hidden className={sheetHandleClassName} />
         <DialogHeader className="text-left">
           <DialogTitle className="text-2xl font-bold">{m.open_account_title()}</DialogTitle>
           <DialogDescription>{m.open_account_description()}</DialogDescription>

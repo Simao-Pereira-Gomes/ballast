@@ -85,3 +85,39 @@ describe("Money", () => {
     })
   })
 })
+
+describe("Money.formatForInput", () => {
+  it("writes the absolute amount with the locale's decimal separator and no symbol", () => {
+    expect(Money.formatForInput(Money.eur(-123456n), "pt-PT")).toBe("1234,56")
+    expect(Money.formatForInput(Money.eur(123456n), "en")).toBe("1234.56")
+  })
+
+  it("pads sub-unit amounts", () => {
+    expect(Money.formatForInput(Money.eur(5n), "pt-PT")).toBe("0,05")
+  })
+
+  it("reads back through Money.parse", () => {
+    for (const cents of [1n, 120n, 185000n, 999999n]) {
+      for (const locale of ["en", "pt-PT"] as const) {
+        expect(Money.parse(Money.formatForInput(Money.eur(cents), locale), "EUR")).toEqual(
+          Money.eur(cents),
+        )
+      }
+    }
+  })
+})
+
+describe("Money.parse", () => {
+  it.each([
+    ["12", 1200n],
+    ["12.3", 1230n],
+    ["12,34", 1234n],
+    ["0,05", 5n],
+  ])("reads %j as %d cents", (text, cents) => {
+    expect(Money.parse(text, "EUR")).toEqual(Money.eur(cents))
+  })
+
+  it.each(["", "-1", "1.234,56", "1,2,3", "12.345", "€5"])("rejects %j", (text) => {
+    expect(Money.parse(text, "EUR")).toBeUndefined()
+  })
+})

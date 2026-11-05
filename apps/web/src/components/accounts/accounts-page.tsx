@@ -1,4 +1,4 @@
-import type { Account } from "@ballast/core"
+import type { AccountSummary } from "@ballast/core"
 import { Plus } from "lucide-react"
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button.tsx"
@@ -17,7 +17,7 @@ export function AccountsPage({
   accounts,
   onOpenAccount,
 }: Readonly<{
-  accounts: readonly Account[]
+  accounts: readonly AccountSummary[]
   onOpenAccount: (details: OpenAccountDetails) => Promise<OpenAccountOutcome>
 }>) {
   const [dialogOpen, setDialogOpen] = useState(false)
