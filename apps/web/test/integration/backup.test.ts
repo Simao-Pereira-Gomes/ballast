@@ -1,6 +1,7 @@
 import { mkdtemp, readdir, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, join } from "node:path"
+import { NodeServices } from "@effect/platform-node"
 import { PgClient } from "@effect/sql-pg"
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql"
 import { Effect, Redacted } from "effect"
@@ -13,12 +14,13 @@ import { createOwner } from "../../src/server/owners.ts"
 import { addManualTransaction } from "../../src/server/transactions.ts"
 
 /** Runs the Postgres tools inside a Testcontainers database, as `docker compose exec` does for Ballast's. */
-const shellOf = (container: StartedPostgreSqlContainer): DatabaseShell => [
-  "docker",
-  "exec",
-  "-i",
-  container.getId(),
-]
+const shellOf = (container: StartedPostgreSqlContainer): DatabaseShell => ({
+  command: "docker",
+  args: ["exec", "-i", container.getId()],
+})
+
+const runOnHost = <A, E>(effect: Effect.Effect<A, E, NodeServices.NodeServices>) =>
+  Effect.runPromise(effect.pipe(Effect.provide(NodeServices.layer)))
 
 const run = <A, E>(container: StartedPostgreSqlContainer, effect: Effect.Effect<A, E, SqlClient>) =>
   Effect.runPromise(
@@ -93,12 +95,14 @@ describe("Backup and restore", () => {
   })
 
   it("restores a backup into an empty database with identical data", async () => {
-    const file = await backup(shellOf(source), directory, new Date("2026-11-05T22:53:12.345Z"))
+    const file = await runOnHost(
+      backup(shellOf(source), directory, new Date("2026-11-05T22:53:12.345Z")),
+    )
 
     expect(basename(file)).toBe("ballast-2026-11-05T22-53-12-345Z.dump")
     expect(await readdir(directory)).toEqual([basename(file)])
 
-    await restore(shellOf(target), file)
+    await runOnHost(restore(shellOf(target), file))
 
     const restored = await run(target, snapshot)
     expect(restored).toEqual(await run(source, snapshot))
@@ -109,8 +113,20 @@ describe("Backup and restore", () => {
   })
 
   it("refuses to restore into a database that already holds data", async () => {
-    const file = await backup(shellOf(source), directory)
+    const file = await runOnHost(backup(shellOf(source), directory))
 
-    await expect(restore(shellOf(source), file)).rejects.toThrow(/not empty/)
+    const error = await runOnHost(Effect.flip(restore(shellOf(source), file)))
+    expect(error._tag).toBe("DatabaseNotEmpty")
+  })
+
+  it("reports a failed tool and leaves no file behind", async () => {
+    const empty = await mkdtemp(join(tmpdir(), "ballast-backup-"))
+    const missing: DatabaseShell = { command: "docker", args: ["exec", "-i", "ballast-no-such-db"] }
+
+    const error = await runOnHost(Effect.flip(backup(missing, empty)))
+
+    expect(error).toMatchObject({ _tag: "DatabaseToolFailed", tool: "pg_dump" })
+    expect(await readdir(empty)).toEqual([])
+    await rm(empty, { recursive: true })
   })
 })

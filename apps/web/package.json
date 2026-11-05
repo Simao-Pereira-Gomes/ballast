@@ -11,7 +11,9 @@
     "test": "vitest run --project unit --passWithNoTests",
     "test:integration": "vitest run --project integration",
     "test:e2e": "vite build && playwright test",
-    "db:migrate": "node --env-file-if-exists=../../.env src/server/migrate-cli.ts"
+    "db:migrate": "node --env-file-if-exists=../../.env src/server/migrate-cli.ts",
+    "db:backup": "node src/server/backup-cli.ts backup",
+    "db:restore": "node src/server/backup-cli.ts restore"
   },
   "devDependencies": {
     "@effect/vitest": "4.1.1",
