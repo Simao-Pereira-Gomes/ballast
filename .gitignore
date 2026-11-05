@@ -23,7 +23,8 @@ samples/private/
 *.pdf
 !test/fixtures/**/*.csv
 
-# Database dumps & local volumes
+# Database dumps & local volumes (`pnpm db:backup` writes to backups/)
+backups/
 *.dump
 *.sql.gz
 pgdata/
