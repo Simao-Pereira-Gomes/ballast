@@ -34,7 +34,7 @@ To restore, start from an empty database. Restore refuses a database that alread
 
 ```sh
 docker compose down -v      # deletes the pgdata volume and everything in it
-docker compose up -d db     # Postgres only: the app would create tables on start
+docker compose up -d --wait db  # Postgres only: the app would create tables on start
 pnpm db:restore backups/ballast-2026-11-05T22-53-12-345Z.dump
 docker compose up -d        # start Ballast again
 ```

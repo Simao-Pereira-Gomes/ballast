@@ -26,6 +26,7 @@ samples/private/
 # Database dumps & local volumes (`pnpm db:backup` writes to backups/)
 backups/
 *.dump
+*.dump.partial
 *.sql.gz
 pgdata/
 
