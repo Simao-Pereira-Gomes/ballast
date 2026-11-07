@@ -2,13 +2,12 @@ import { Money } from "@ballast/core"
 import type { OwnerId } from "@ballast/core"
 import { layer } from "@effect/vitest"
 import { Effect } from "effect"
-import { SqlClient } from "effect/sql/SqlClient"
 import { assert, expect } from "vitest"
 import { createAccount, getAccount, listAccounts } from "../../src/server/accounts.ts"
 import { createOwner } from "../../src/server/owners.ts"
 import {
   addManualTransaction,
-  deleteManualTransaction,
+  deleteTransaction,
   editManualTransaction,
   listTransactions,
 } from "../../src/server/transactions.ts"
@@ -115,32 +114,9 @@ layer(TestDatabase)("Manual Transactions", (it) => {
       const kept = yield* addManualTransaction(owner, account.id, salary)
       const deleted = yield* addManualTransaction(owner, account.id, coffee)
 
-      yield* deleteManualTransaction(owner, deleted.id)
+      yield* deleteTransaction(owner, deleted.id)
 
       expect(yield* listTransactions(owner, account.id)).toEqual([kept])
-    }),
-  )
-
-  it.effect("an imported Transaction can't be edited or deleted as a manual one", () =>
-    Effect.gen(function* () {
-      const owner = yield* createOwner
-      const account = yield* openCurrentAccount(owner)
-      // No Import pipeline yet (#5), so the imported line is written directly.
-      const sql = yield* SqlClient
-      yield* sql`
-        INSERT INTO transaction (owner_id, account_id, date, amount_cents, description, source)
-        VALUES (${owner}, ${account.id}, '2026-10-01', -4890, 'Compra Mercado', 'import')
-      `
-      const [imported] = yield* listTransactions(owner, account.id)
-      assert(imported !== undefined)
-      expect(imported.source).toBe("import")
-
-      const editError = yield* Effect.flip(editManualTransaction(owner, imported.id, coffee))
-      const deleteError = yield* Effect.flip(deleteManualTransaction(owner, imported.id))
-
-      expect(editError._tag).toBe("TransactionNotFound")
-      expect(deleteError._tag).toBe("TransactionNotFound")
-      expect(yield* listTransactions(owner, account.id)).toEqual([imported])
     }),
   )
 })
@@ -180,7 +156,7 @@ layer(TestDatabase)("Account balances", (it) => {
         expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(109830n))
 
         yield* editManualTransaction(owner, coffeeLine.id, { ...coffee, amount: "3" })
-        yield* deleteManualTransaction(owner, rent.id)
+        yield* deleteTransaction(owner, rent.id)
 
         // 1850.00 − 3.00
         expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(184700n))
@@ -220,7 +196,7 @@ layer(TestDatabase)("Owner scoping of Transactions", (it) => {
       expect((yield* Effect.flip(editManualTransaction(bob, alicesCoffee.id, salary)))._tag).toBe(
         "TransactionNotFound",
       )
-      expect((yield* Effect.flip(deleteManualTransaction(bob, alicesCoffee.id)))._tag).toBe(
+      expect((yield* Effect.flip(deleteTransaction(bob, alicesCoffee.id)))._tag).toBe(
         "TransactionNotFound",
       )
       expect(yield* listTransactions(alice, alicesAccount.id)).toEqual([alicesCoffee])

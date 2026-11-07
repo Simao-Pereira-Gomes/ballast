@@ -38,3 +38,12 @@ Edge cases it covers, all seen in the real export:
 - Several statement lines on one day.
 - Amounts with zero, one or two decimals, and sub-euro amounts (`-0.12`, `0.03`).
 - Title Case descriptions with accents (`ç`, `ã`, `é`) and tokens with digits.
+
+## `movements-en.json`
+
+The same lines as `movements-pt.json` with the header row and fixed texts in English,
+as if exported from the site set to English: `Operation date | Value date | Description |
+Amount( EUR ) | Book balance( EUR )`. These English texts are **invented**: no export from
+the English site has been seen. That's fine because the adapter recognises the layout by its
+structure, not its header texts, so this fixture proves an unseen language still reads.
+Descriptions stay in Portuguese, as the bank writes them whatever the site's language.

@@ -47,6 +47,9 @@ export const parse = (text: string, currency: Currency): Money | undefined => {
 
 export const Order: O.Order<Money> = O.mapInput(O.BigInt, (money: Money) => money.cents)
 
+/** Whether two amounts are the same, to the cent. */
+export const equals = (a: Money, b: Money): boolean => Order(a, b) === 0
+
 /**
  * Splits an amount into parts proportional to `ratios`, using the
  * largest-remainder method so the parts always sum to the whole.
