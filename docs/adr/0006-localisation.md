@@ -12,7 +12,7 @@ The **core never produces sentences**. Expected failures and other outputs that 
 
 Domain terms get **one fixed translation each**, chosen by the Owner and recorded beside the English term in `CONTEXT.md`. Code, ADRs and issues stay in English.
 
-**Bank exports are a separate concern.** An export's language is whatever the bank's site was set to, not the interface language. Each Statement Parser adapter recognises its layout from the header row in every language it knows and reads dates and amounts by layout. Transaction descriptions are kept exactly as the bank wrote them; Categorisation Rules match them as they are and are never translated.
+**Bank exports are a separate concern.** An export's language is whatever the bank's site was set to, not the interface language. Each Statement Parser adapter recognises its layout by its structure (the shape of its columns and lines), not by its header texts, so it reads an export from the site in any language, and it reads dates and amounts by layout. Transaction descriptions are kept exactly as the bank wrote them, for display and editing. Beside each one the core stores its **normalised form** (`normaliseDescription`: whitespace collapsed, case folded, card numbers reduced to their last four digits, accents kept). The dedup fingerprint and Categorisation Rules match on that form, so a change in the bank's spacing, casing or card masking doesn't break a match. Neither form is ever translated.
 
 ## Consequences
 

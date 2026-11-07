@@ -4,7 +4,7 @@ import { runAction, runQuery } from "../runtime.ts"
 import {
   accountLedgerOfCurrentOwner,
   addManualTransactionForCurrentOwner,
-  deleteManualTransactionForCurrentOwner,
+  deleteTransactionForCurrentOwner,
   editManualTransactionForCurrentOwner,
 } from "../transactions.ts"
 
@@ -44,4 +44,4 @@ export const editTransaction = createServerFn({ method: "POST" })
 
 export const deleteTransaction = createServerFn({ method: "POST" })
   .validator(Schema.toStandardSchemaV1(Schema.Struct({ transactionId: Schema.String })))
-  .handler(({ data }) => runAction(deleteManualTransactionForCurrentOwner(data.transactionId)))
+  .handler(({ data }) => runAction(deleteTransactionForCurrentOwner(data.transactionId)))

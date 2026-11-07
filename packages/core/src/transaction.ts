@@ -1,5 +1,6 @@
 import { Data, Result, Schema } from "effect"
 import type { AccountId } from "./account.ts"
+import type { ImportId } from "./import.ts"
 import * as Money from "./money.ts"
 import type { OwnerId } from "./owner.ts"
 
@@ -27,6 +28,8 @@ export interface Transaction {
   readonly amount: Money.Money
   readonly description: string
   readonly source: TransactionSource
+  /** The Import that created it; `null` for a manual Transaction. */
+  readonly importId: ImportId | null
 }
 
 /** What the Owner enters for a manual Transaction, once checked. */

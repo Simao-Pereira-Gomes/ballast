@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start"
 import { AccountLedgerPage } from "../components/transactions/account-ledger-page.tsx"
 import { archiveAccount, changeAccount, unarchiveAccount } from "../server/functions/accounts.ts"
 import { addHolding, changeHolding, removeHolding } from "../server/functions/holdings.ts"
+import { importStatement } from "../server/functions/imports.ts"
 import {
   addTransaction,
   deleteTransaction,
@@ -21,6 +22,7 @@ function AccountLedgerRoute() {
   const add = useServerFn(addTransaction)
   const edit = useServerFn(editTransaction)
   const remove = useServerFn(deleteTransaction)
+  const importFile = useServerFn(importStatement)
   const change = useServerFn(changeAccount)
   const archive = useServerFn(archiveAccount)
   const unarchive = useServerFn(unarchiveAccount)
@@ -49,6 +51,12 @@ function AccountLedgerRoute() {
       onDelete={async (transaction) =>
         refreshAfter(await remove({ data: { transactionId: transaction.id } }))
       }
+      onImport={async (file) => {
+        const data = new FormData()
+        data.set("accountId", account.id)
+        data.set("file", file)
+        return refreshAfter(await importFile({ data }))
+      }}
       onAddHolding={async (details) =>
         refreshAfter(await addHoldingFn({ data: { accountId: account.id, ...details } }))
       }

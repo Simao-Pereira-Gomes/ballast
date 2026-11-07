@@ -1,7 +1,7 @@
 import { directionOf } from "@ballast/core"
 import type { AccountSummary, Holding, Transaction } from "@ballast/core"
 import { Link } from "@tanstack/react-router"
-import { Archive, ChevronLeft, Pencil, Plus, ReceiptText } from "lucide-react"
+import { Archive, ChevronLeft, FileUp, Pencil, Plus, ReceiptText } from "lucide-react"
 import { useRef, useState } from "react"
 import { AccountDialog } from "@/components/accounts/account-dialog.tsx"
 import type { AccountFormDetails, AccountOutcome } from "@/components/accounts/account-dialog.tsx"
@@ -13,6 +13,8 @@ import type {
   RemoveOutcome,
 } from "@/components/holdings/holding-dialog.tsx"
 import { HoldingsSection } from "@/components/holdings/holdings-section.tsx"
+import { ImportDialog } from "@/components/statement-import/import-dialog.tsx"
+import type { ImportOutcome } from "@/components/statement-import/import-dialog.tsx"
 import { CompactEmpty } from "@/components/shell/compact-empty.tsx"
 import { Button } from "@/components/ui/button.tsx"
 import { cn } from "@/lib/utils.ts"
@@ -30,8 +32,9 @@ import type {
 
 /**
  * One Account: its balance, computed from its Transactions, and the
- * Transactions themselves, newest first. Manual Transactions can be edited
- * and deleted; the ways to add one mirror the Accounts page. An Investment
+ * Transactions themselves, newest first. A bank export can be imported into
+ * an active Account. Manual Transactions can be edited and deleted, imported
+ * ones only deleted; the ways to add one mirror the Accounts page. An Investment
  * also shows its Valuation and Holdings. The Account itself can be edited
  * and archived, and an archived one unarchived.
  */
@@ -42,6 +45,7 @@ export function AccountLedgerPage({
   onAdd,
   onEdit,
   onDelete,
+  onImport,
   onAddHolding,
   onChangeHolding,
   onRemoveHolding,
@@ -58,6 +62,7 @@ export function AccountLedgerPage({
   onAdd: (details: TransactionFormDetails) => Promise<TransactionOutcome>
   onEdit: (transaction: Transaction, details: TransactionFormDetails) => Promise<TransactionOutcome>
   onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
+  onImport: (file: File) => Promise<ImportOutcome>
   onChangeAccount: (details: AccountFormDetails) => Promise<AccountOutcome>
   onArchive: () => Promise<void>
   onUnarchive: () => Promise<void>
@@ -66,14 +71,20 @@ export function AccountLedgerPage({
   const investment = account.role === "investment"
   const [dialogOpen, setDialogOpen] = useState(false)
   const [accountDialogOpen, setAccountDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [unarchiving, setUnarchiving] = useState(false)
   const [mode, setMode] = useState<TransactionDialogMode>({ kind: "add" })
   const [alreadyGone, setAlreadyGone] = useState(false)
   const opener = useRef<HTMLElement | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
 
-  const openDialog = (next: TransactionDialogMode) => {
+  /** Remembers what opened a dialog, so focus can return there when it closes. */
+  const rememberOpener = () => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  }
+
+  const openDialog = (next: TransactionDialogMode) => {
+    rememberOpener()
     setMode(next)
     setAlreadyGone(false)
     setDialogOpen(true)
@@ -89,8 +100,13 @@ export function AccountLedgerPage({
     openDialog({ kind: "add" })
   }
 
+  const startImporting = () => {
+    rememberOpener()
+    setImportDialogOpen(true)
+  }
+
   const startEditingAccount = () => {
-    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    rememberOpener()
     setAccountDialogOpen(true)
   }
 
@@ -132,6 +148,17 @@ export function AccountLedgerPage({
           >
             <Pencil aria-hidden />
           </Button>
+          {!account.archived && (
+            <Button
+              variant="secondary"
+              aria-label={m.import_statement()}
+              className="h-12 rounded-2xl max-md:size-12 md:px-5 md:text-base md:font-semibold"
+              onClick={startImporting}
+            >
+              <FileUp aria-hidden />
+              <span className="max-md:sr-only">{m.import_statement()}</span>
+            </Button>
+          )}
           <Button
             className="hidden h-12 rounded-2xl px-5 text-base font-semibold shadow-sm md:inline-flex"
             onClick={startAdding}
@@ -221,8 +248,11 @@ export function AccountLedgerPage({
               <li key={transaction.id}>
                 <TransactionRow
                   transaction={transaction}
-                  onEdit={() => {
-                    openDialog({ kind: "edit", transaction })
+                  onOpen={() => {
+                    openDialog({
+                      kind: transaction.source === "manual" ? "edit" : "imported",
+                      transaction,
+                    })
                   }}
                 />
               </li>
@@ -254,6 +284,13 @@ export function AccountLedgerPage({
         onCloseAutoFocus={onCloseAutoFocus}
       />
 
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={onImport}
+        onCloseAutoFocus={onCloseAutoFocus}
+      />
+
       <AccountDialog
         open={accountDialogOpen}
         mode={{ kind: "edit", account, onArchive }}
@@ -265,23 +302,24 @@ export function AccountLedgerPage({
   )
 }
 
-/** A Transaction line. Manual ones are marked and open for editing; imported ones don't. */
+/** A Transaction line, marked manual or imported, that opens the Transaction. */
 function TransactionRow({
   transaction,
-  onEdit,
-}: Readonly<{ transaction: Transaction; onEdit: () => void }>) {
-  const manual = transaction.source === "manual"
-  const content = (
-    <>
+  onOpen,
+}: Readonly<{ transaction: Transaction; onOpen: () => void }>) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors outline-ring hover:bg-secondary focus-visible:outline-2 focus-visible:-outline-offset-2"
+    >
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{transaction.description}</p>
         <p className="mt-0.5 flex items-center gap-2 text-sm text-muted-foreground">
           {formatDay(transaction.date)}
-          {manual && (
-            <span className="rounded-full bg-secondary px-2 text-xs leading-5 font-medium text-secondary-foreground">
-              {m.source_manual()}
-            </span>
-          )}
+          <span className="rounded-full bg-secondary px-2 text-xs leading-5 font-medium text-secondary-foreground">
+            {transaction.source === "manual" ? m.source_manual() : m.source_import()}
+          </span>
         </p>
       </div>
       <p
@@ -292,22 +330,6 @@ function TransactionRow({
       >
         {formatMoney(transaction.amount)}
       </p>
-    </>
-  )
-  const rowClassName = "flex w-full items-center gap-4 px-5 py-4 text-left"
-
-  return manual ? (
-    <button
-      type="button"
-      onClick={onEdit}
-      className={cn(
-        rowClassName,
-        "transition-colors outline-ring hover:bg-secondary focus-visible:outline-2 focus-visible:-outline-offset-2",
-      )}
-    >
-      {content}
     </button>
-  ) : (
-    <div className={rowClassName}>{content}</div>
   )
 }

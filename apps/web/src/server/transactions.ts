@@ -1,10 +1,12 @@
 import {
   AccountId,
+  ImportId,
   OwnerId,
   TransactionId,
   TransactionNotFound,
   TransactionSource,
   decodeTransactionDetails,
+  normaliseDescription,
 } from "@ballast/core"
 import type { Transaction } from "@ballast/core"
 import { Effect, Schema } from "effect"
@@ -21,6 +23,7 @@ const TransactionRow = Schema.Struct({
   amountCents: Schema.BigIntFromString,
   description: Schema.String,
   source: TransactionSource,
+  importId: Schema.NullOr(ImportId),
 })
 
 const decodeRows = (rows: unknown) =>
@@ -37,7 +40,7 @@ const decodeRows = (rows: unknown) =>
 
 /** Postgres would hand back a `date` as a JS Date, so it's read as ISO text. */
 const columns = `id, owner_id AS "ownerId", account_id AS "accountId", date::text AS date,
-  amount_cents::text AS "amountCents", description, source`
+  amount_cents::text AS "amountCents", description, source, import_id AS "importId"`
 
 const asTransactionId = (transactionId: string) =>
   Effect.fromOption(Schema.decodeUnknownOption(TransactionId)(transactionId)).pipe(
@@ -64,9 +67,11 @@ export const addManualTransaction = (ownerId: OwnerId, accountId: string, input:
     const sql = yield* SqlClient
     const rows = yield* decodeRows(
       yield* sql`
-        INSERT INTO transaction (owner_id, account_id, date, amount_cents, description, source)
+        INSERT INTO transaction
+          (owner_id, account_id, date, amount_cents, description, description_key, source)
         VALUES (${ownerId}, ${account.id}, ${details.date.toString()},
-                ${details.amount.cents.toString()}, ${details.description}, 'manual')
+                ${details.amount.cents.toString()}, ${details.description},
+                ${normaliseDescription(details.description)}, 'manual')
         RETURNING ${sql.literal(columns)}
       `,
     )
@@ -90,6 +95,7 @@ export const editManualTransaction = (ownerId: OwnerId, transactionId: string, i
         SET date = ${details.date.toString()},
             amount_cents = ${details.amount.cents.toString()},
             description = ${details.description},
+            description_key = ${normaliseDescription(details.description)},
             updated_at = now()
         WHERE owner_id = ${ownerId} AND id = ${id} AND source = 'manual'
         RETURNING ${sql.literal(columns)}
@@ -98,15 +104,18 @@ export const editManualTransaction = (ownerId: OwnerId, transactionId: string, i
     return yield* affected(transactionId, rows)
   })
 
-/** Deletes one of the Owner's manual Transactions. Imported ones stay. */
-export const deleteManualTransaction = (ownerId: OwnerId, transactionId: string) =>
+/**
+ * Deletes one of the Owner's Transactions, manual or imported. An imported
+ * line deleted this way can be imported again.
+ */
+export const deleteTransaction = (ownerId: OwnerId, transactionId: string) =>
   Effect.gen(function* () {
     const id = yield* asTransactionId(transactionId)
     const sql = yield* SqlClient
     const rows = yield* decodeRows(
       yield* sql`
         DELETE FROM transaction
-        WHERE owner_id = ${ownerId} AND id = ${id} AND source = 'manual'
+        WHERE owner_id = ${ownerId} AND id = ${id}
         RETURNING ${sql.literal(columns)}
       `,
     )
@@ -153,8 +162,8 @@ export const editManualTransactionForCurrentOwner = (transactionId: string, inpu
     return yield* editManualTransaction(owner.id, transactionId, input)
   })
 
-export const deleteManualTransactionForCurrentOwner = (transactionId: string) =>
+export const deleteTransactionForCurrentOwner = (transactionId: string) =>
   Effect.gen(function* () {
     const owner = yield* CurrentOwner
-    yield* deleteManualTransaction(owner.id, transactionId)
+    yield* deleteTransaction(owner.id, transactionId)
   })

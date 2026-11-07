@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input.tsx"
 import { Label } from "@/components/ui/label.tsx"
 import { cn } from "@/lib/utils.ts"
 import { m } from "@/paraglide/messages.js"
-import { amountForInput } from "@/ui/format.ts"
+import { amountForInput, formatDay, formatMoney } from "@/ui/format.ts"
 import { transactionProblemMessage } from "@/ui/transaction-problems.ts"
 import { transactionTerms } from "@/ui/transaction-terms.ts"
 
@@ -41,9 +41,14 @@ export type TransactionOutcome =
 
 export type DeleteOutcome = { readonly ok: true } | Gone
 
-/** What the dialog is for: a new Transaction, or changing a manual one. */
+/**
+ * What the dialog is for: a new Transaction, changing a manual one, or
+ * looking at an imported one, which can only be deleted.
+ */
 export type TransactionDialogMode =
-  { readonly kind: "add" } | { readonly kind: "edit"; readonly transaction: Transaction }
+  | { readonly kind: "add" }
+  | { readonly kind: "edit"; readonly transaction: Transaction }
+  | { readonly kind: "imported"; readonly transaction: Transaction }
 
 const directionLabel: Record<Direction, () => string> = {
   outflow: m.direction_outflow,
@@ -82,6 +87,36 @@ export function TransactionDialog({
   onCloseAutoFocus?: (event: Event) => void
 }>) {
   const editing = mode.kind === "edit"
+  const onDone = (gone: boolean) => {
+    if (gone) onGone()
+    onOpenChange(false)
+  }
+
+  if (mode.kind === "imported") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          {...(onCloseAutoFocus ? { onCloseAutoFocus } : {})}
+          closeLabel={m.close()}
+          className={sheetContentClassName}
+        >
+          <div aria-hidden className={sheetHandleClassName} />
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-2xl font-bold">
+              {m.imported_transaction_title()}
+            </DialogTitle>
+            <DialogDescription>{m.imported_transaction_description()}</DialogDescription>
+          </DialogHeader>
+          <ImportedTransaction
+            key={mode.transaction.id}
+            transaction={mode.transaction}
+            onDelete={onDelete}
+            onDone={onDone}
+          />
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,13 +140,77 @@ export function TransactionDialog({
           role={role}
           onSubmit={onSubmit}
           onDelete={onDelete}
-          onDone={(gone) => {
-            if (gone) onGone()
-            onOpenChange(false)
-          }}
+          onDone={onDone}
         />
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** An imported Transaction's details, as the bank stated them, with a two-step delete. */
+function ImportedTransaction({
+  transaction,
+  onDelete,
+  onDone,
+}: Readonly<{
+  transaction: Transaction
+  onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
+  onDone: (gone: boolean) => void
+}>) {
+  const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      const outcome = await onDelete(transaction)
+      onDone(!outcome.ok)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const details = [
+    { label: m.transaction_description(), value: transaction.description },
+    { label: m.transaction_date(), value: formatDay(transaction.date) },
+    { label: m.transaction_amount(), value: formatMoney(transaction.amount) },
+  ]
+
+  return (
+    <div className="space-y-5">
+      <dl className="divide-y divide-border rounded-2xl bg-secondary">
+        {details.map((detail) => (
+          <div key={detail.label} className="flex items-baseline justify-between gap-4 px-4 py-3">
+            <dt className="shrink-0 text-sm text-muted-foreground">{detail.label}</dt>
+            <dd className="min-w-0 text-right font-semibold break-words tabular-nums">
+              {detail.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {confirmingDelete ? (
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={deleting}
+          className="h-12 w-full rounded-2xl text-base font-semibold"
+          onClick={() => void handleDelete()}
+        >
+          {deleting ? m.deleting_transaction() : m.confirm_delete_transaction()}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-12 w-full rounded-2xl text-base text-destructive hover:text-destructive"
+          onClick={() => {
+            setConfirmingDelete(true)
+          }}
+        >
+          {m.delete_transaction()}
+        </Button>
+      )}
+    </div>
   )
 }
 
