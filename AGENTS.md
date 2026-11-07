@@ -2,7 +2,7 @@
 
 ## Git
 
-- **No co-author trailers.** Do not add `Co-Authored-By:` (or any other attribution trailer) to commit messages unless the repository owner explicitly asks for it in that request.
+- **Co-author trailers are welcome.** An agent that writes a commit may end its message with a `Co-Authored-By:` trailer naming itself.
 - **Semantic commit messages ([Conventional Commits](https://www.conventionalcommits.org/)).** Write the subject as `<type>(<scope>): <summary>`, with the scope optional. The summary is imperative, lower case, has no trailing full stop and stays under about 72 characters, e.g. `feat(core): parse Santander statement lines`.
   - **Types:** `feat` (behaviour the Owner can see), `fix` (a bug), `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`.
   - **Scopes:** `core`, `web`, `db` or `deps`, or leave the scope out when the change spans several.
