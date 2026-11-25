@@ -199,14 +199,18 @@ const selectSummaries = (
     return yield* decodeSummaries(
       yield* sql`
         SELECT ${sql.literal(accountColumns("a"))},
-               COALESCE(t.balance_cents, 0)::text AS "balanceCents",
+               (COALESCE(c.balance_cents, 0) + COALESCE(t.balance_cents, 0))::text AS "balanceCents",
                h.valuation_cents::text AS "valuationCents",
                h.oldest_valued_on::text AS "oldestValuedOn"
         FROM account a
         LEFT JOIN (
-          SELECT owner_id, account_id, SUM(amount_cents) AS balance_cents
-          FROM transaction WHERE owner_id = ${ownerId} GROUP BY owner_id, account_id
-        ) t ON t.owner_id = a.owner_id AND t.account_id = a.id
+          SELECT DISTINCT ON (account_id) owner_id, account_id, date, balance_cents
+          FROM balance_checkpoint WHERE owner_id = ${ownerId} ORDER BY account_id, date
+        ) c ON c.owner_id = a.owner_id AND c.account_id = a.id
+        LEFT JOIN LATERAL (
+          SELECT SUM(amount_cents) AS balance_cents FROM transaction
+          WHERE owner_id = a.owner_id AND account_id = a.id AND (c.date IS NULL OR date > c.date)
+        ) t ON true
         LEFT JOIN (
           SELECT owner_id, account_id, SUM(value_cents) AS valuation_cents,
                  MIN(valued_on) AS oldest_valued_on

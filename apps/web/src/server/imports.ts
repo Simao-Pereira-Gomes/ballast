@@ -14,6 +14,7 @@ import type { Import, ImportProblem } from "@ballast/core"
 import { Array as Arr, Effect, Schema } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { getAccount } from "./accounts.ts"
+import { recordCheckpoint } from "./checkpoints.ts"
 import { CurrentOwner } from "./owners.ts"
 import { decodeSpreadsheet } from "./spreadsheet.ts"
 
@@ -46,7 +47,7 @@ export interface ImportSummary {
   readonly moneyIn: Money.Money
   /** The sum of the file's lines that took money out: negative. */
   readonly moneyOut: Money.Money
-  /** The export's Balance Checkpoint: the bank's balance after the newest line. Not stored yet. */
+  /** The export's Balance Checkpoint: the bank's balance after the newest line. Recorded with the Import. */
   readonly balanceCheckpoint: Money.Money
   /** The Account's balance from its Transactions, after the Import. */
   readonly accountBalance: Money.Money
@@ -87,7 +88,7 @@ const checkFile = (file: ImportFile) => {
  * exports never double-count. All or nothing: any problem with the file or
  * an Archived Account fails with `InvalidImport` naming every problem, and
  * nothing is stored. When every line is already imported no Import is
- * recorded. Fails with `AccountNotFound` when the Account isn't the Owner's.
+ * recorded, but the export's Balance Checkpoint still is. Fails with `AccountNotFound` when the Account isn't the Owner's.
  */
 export const importStatement = (ownerId: OwnerId, accountId: string, file: ImportFile) =>
   Effect.gen(function* () {
@@ -109,39 +110,44 @@ export const importStatement = (ownerId: OwnerId, accountId: string, file: Impor
     const { fresh, skipped } = separateNewLines(statement.lines, known)
 
     const fileName = baseName(file.name)
-    const recorded = yield* Arr.match(fresh, {
-      onEmpty: () => Effect.succeed(null),
-      onNonEmpty: (newLines) =>
-        sql
-          .withTransaction(
-            Effect.gen(function* () {
-              const [row] = yield* sql<{ id: string }>`
-                INSERT INTO import (owner_id, account_id, file_name, format, line_count)
-                VALUES (${ownerId}, ${account.id}, ${fileName}, ${statement.format},
-                        ${newLines.length})
-                RETURNING id
-              `
-              if (row === undefined) return yield* Effect.die("INSERT … RETURNING gave no row")
-              yield* sql`
-                INSERT INTO transaction ${sql.insert(
-                  Arr.map(newLines, ({ line, fingerprint }) => ({
-                    owner_id: ownerId,
-                    account_id: account.id,
-                    date: line.date.toString(),
-                    amount_cents: line.amount.cents.toString(),
-                    description: line.description,
-                    description_key: line.descriptionKey,
-                    source: "import",
-                    import_id: row.id,
-                    fingerprint,
-                  })),
-                )}
-              `
-              return row.id
-            }),
-          )
-          .pipe(Effect.flatMap(Schema.decodeUnknownEffect(ImportId)), Effect.orDie),
-    })
+    const recorded = yield* sql
+      .withTransaction(
+        Effect.gen(function* () {
+          const importId = yield* Arr.match(fresh, {
+            onEmpty: () => Effect.succeed(null),
+            onNonEmpty: (newLines) =>
+              Effect.gen(function* () {
+                const [row] = yield* sql<{ id: string }>`
+                  INSERT INTO import (owner_id, account_id, file_name, format, line_count)
+                  VALUES (${ownerId}, ${account.id}, ${fileName}, ${statement.format},
+                          ${newLines.length})
+                  RETURNING id
+                `
+                if (row === undefined) return yield* Effect.die("INSERT … RETURNING gave no row")
+                yield* sql`
+                  INSERT INTO transaction ${sql.insert(
+                    Arr.map(newLines, ({ line, fingerprint }) => ({
+                      owner_id: ownerId,
+                      account_id: account.id,
+                      date: line.date.toString(),
+                      amount_cents: line.amount.cents.toString(),
+                      description: line.description,
+                      description_key: line.descriptionKey,
+                      source: "import",
+                      import_id: row.id,
+                      fingerprint,
+                    })),
+                  )}
+                `
+                return yield* Schema.decodeUnknownEffect(ImportId)(row.id)
+              }),
+          })
+          // The export states the bank's balance even when every line was already imported.
+          yield* recordCheckpoint(ownerId, account.id, importId, statement.balanceCheckpoint)
+          return importId
+        }),
+      )
+      .pipe(Effect.orDie)
 
     const { balance } = yield* getAccount(ownerId, account.id)
     const [first] = statement.lines

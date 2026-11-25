@@ -5,9 +5,11 @@ import { Effect } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { assert, expect } from "vitest"
 import { archiveAccount, createAccount, getAccount } from "../../src/server/accounts.ts"
+import { listCheckpoints } from "../../src/server/checkpoints.ts"
 import { importStatement, listImports, maxImportBytes } from "../../src/server/imports.ts"
-import { createOwner } from "../../src/server/owners.ts"
+import { CurrentOwner, createOwner } from "../../src/server/owners.ts"
 import {
+  accountLedgerOfCurrentOwner,
   addManualTransaction,
   deleteTransaction,
   editManualTransaction,
@@ -44,8 +46,8 @@ layer(TestDatabase)("Santander Import", (it) => {
         // 1004.00 − 412.35 opening balance − 2030.02 in
         moneyOut: Money.eur(-143837n),
         balanceCheckpoint: Money.eur(100400n),
-        // The Account was empty, so its balance is what this export moved.
-        accountBalance: Money.eur(59165n),
+        // The Account was empty and had no opening balance: the bank's figure is right.
+        accountBalance: Money.eur(100400n),
       })
       expect(summary.firstDate.toString()).toBe("2026-09-01")
       expect(summary.lastDate.toString()).toBe("2026-09-30")
@@ -60,7 +62,7 @@ layer(TestDatabase)("Santander Import", (it) => {
         description: "Juros Credores",
       })
       expect(transactions[0]?.date.toString()).toBe("2026-09-30")
-      expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(59165n))
+      expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(100400n))
     }),
   )
 
@@ -200,7 +202,7 @@ layer(TestDatabase)("Santander Import", (it) => {
         lineCount: 19,
         newCount: 0,
         skippedCount: 19,
-        accountBalance: Money.eur(59165n),
+        accountBalance: Money.eur(100400n),
       })
       expect(yield* listTransactions(owner, account.id)).toHaveLength(19)
       expect(yield* listImports(owner, account.id)).toHaveLength(1)
@@ -230,7 +232,7 @@ layer(TestDatabase)("Santander Import", (it) => {
       expect(first).toMatchObject({ newCount: 12, skippedCount: 0 })
       expect(second).toMatchObject({ lineCount: 12, newCount: 7, skippedCount: 5 })
       expect(yield* listTransactions(owner, account.id)).toHaveLength(19)
-      expect(second.accountBalance).toEqual(Money.eur(59165n))
+      expect(second.accountBalance).toEqual(Money.eur(100400n))
     }),
   )
 
@@ -325,6 +327,115 @@ layer(TestDatabase)("Owner scoping of Imports", (it) => {
       expect(error._tag).toBe("AccountNotFound")
       expect(yield* listTransactions(alice, account.id)).toEqual([])
       expect(yield* listImports(bob, account.id)).toEqual([])
+    }),
+  )
+})
+
+/** The fixture's lines, newest first, as grid rows (rows 0–6 are the header). */
+const head = portuguese.rows.slice(0, 7)
+const lineRows = portuguese.rows.slice(7).filter((row) => row.some((cell) => cell !== null))
+const fileOf = (name: string, from: number, to: number) => ({
+  name,
+  bytes: workbookOf({ ...portuguese, rows: [...head, ...lineRows.slice(from, to)] }),
+})
+
+layer(TestDatabase)("Balance Checkpoints", (it) => {
+  // Oldest 7 lines (to 5 Sept), the 6 newest (15–30 Sept) and the 6 between (7–12 Sept).
+  const oldest = fileOf("oldest.xls", 12, 19)
+  const newest = fileOf("newest.xls", 0, 6)
+  const between = fileOf("between.xls", 6, 12)
+
+  const discrepanciesOf = (owner: OwnerId, accountId: string) =>
+    Effect.gen(function* () {
+      const { discrepancies } = yield* accountLedgerOfCurrentOwner(accountId).pipe(
+        Effect.provideService(CurrentOwner, { id: owner }),
+      )
+      return discrepancies
+    })
+
+  it.effect("records the export's balance, and the Account's balance is the bank's", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+
+      yield* importStatement(owner, account.id, santanderFile)
+
+      const [checkpoint, ...others] = yield* listCheckpoints(owner, account.id)
+      expect(others).toEqual([])
+      expect(checkpoint?.date.toString()).toBe("2026-09-30")
+      expect(checkpoint?.balance).toEqual(Money.eur(100400n))
+      expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(100400n))
+      expect(yield* discrepanciesOf(owner, account.id)).toEqual([])
+    }),
+  )
+
+  it.effect("re-importing the same file leaves one Checkpoint and no Discrepancy", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+      yield* importStatement(owner, account.id, santanderFile)
+      yield* importStatement(owner, account.id, santanderFile)
+
+      expect(yield* listCheckpoints(owner, account.id)).toHaveLength(1)
+      expect(yield* discrepanciesOf(owner, account.id)).toEqual([])
+    }),
+  )
+
+  it.effect("exports in date order, with nothing missing, show no Discrepancy", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+
+      yield* importStatement(owner, account.id, oldest)
+      yield* importStatement(owner, account.id, between)
+      yield* importStatement(owner, account.id, newest)
+
+      expect(yield* listCheckpoints(owner, account.id)).toHaveLength(3)
+      expect(yield* discrepanciesOf(owner, account.id)).toEqual([])
+      expect((yield* getAccount(owner, account.id)).balance).toEqual(Money.eur(100400n))
+    }),
+  )
+
+  it.effect("shows a Discrepancy for a missing stretch, and clears it once imported", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+      yield* importStatement(owner, account.id, oldest)
+      yield* importStatement(owner, account.id, newest)
+
+      const [found, ...others] = yield* discrepanciesOf(owner, account.id)
+      expect(others).toEqual([])
+      expect(found?.date.toString()).toBe("2026-09-30")
+      expect(found?.stated).toEqual(Money.eur(100400n))
+      // The six lines between 5 and 15 Sept moved −55.01 − 27.5 − 37.85 − 1.2 − 1.2 + 1850 = 1727.24.
+      expect(found?.difference).toEqual(Money.eur(172724n))
+
+      yield* importStatement(owner, account.id, between)
+
+      expect(yield* discrepanciesOf(owner, account.id)).toEqual([])
+    }),
+  )
+
+  it.effect("shows a Discrepancy for a duplicated Transaction, and clears it once deleted", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+      yield* importStatement(owner, account.id, oldest)
+      yield* importStatement(owner, account.id, between)
+      yield* importStatement(owner, account.id, newest)
+      const duplicate = yield* addManualTransaction(owner, account.id, {
+        date: "2026-09-12",
+        amount: "55.01",
+        direction: "outflow",
+        description: "Compra Gasolineira",
+      })
+
+      const [found] = yield* discrepanciesOf(owner, account.id)
+      expect(found?.difference).toEqual(Money.eur(5501n))
+
+      yield* deleteTransaction(owner, duplicate.id)
+
+      expect(yield* discrepanciesOf(owner, account.id)).toEqual([])
     }),
   )
 })

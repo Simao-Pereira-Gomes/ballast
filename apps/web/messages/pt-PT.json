@@ -241,5 +241,8 @@
   "source_import": "Importado",
   "imported_transaction_title": "Movimento importado",
   "imported_transaction_description": "Este movimento veio de uma importação, por isso os dados são do banco e não podem ser editados. Pode eliminá-lo.",
-  "import_summary_balance_checkpoint": "Saldo de referência (indicado pelo banco)"
+  "import_summary_balance_checkpoint": "Saldo de referência (indicado pelo banco)",
+  "balance_discrepancy_title": "Discrepância de saldo",
+  "balance_discrepancy_body": "Os movimentos não somam o saldo indicado pelo banco, por isso pode faltar um movimento, haver um repetido ou algum estar errado.",
+  "balance_discrepancy_item": "Em {date} o banco indicou {stated}, mas os movimentos somam {computed}: uma diferença de {difference}."
 }
