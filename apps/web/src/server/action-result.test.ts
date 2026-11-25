@@ -1,5 +1,6 @@
 import {
   HoldingNotFound,
+  ImportNotFound,
   InvalidHolding,
   InvalidTransaction,
   TransactionNotFound,
@@ -28,6 +29,16 @@ describe("toActionResult", () => {
     Effect.gen(function* () {
       const result = yield* toActionResult(
         Effect.fail(new TransactionNotFound({ transactionId: "a-stale-id" })),
+      )
+
+      expect(result).toEqual({ ok: false, reason: "gone" })
+    }),
+  )
+
+  it.effect("reports an Import that no longer exists as gone", () =>
+    Effect.gen(function* () {
+      const result = yield* toActionResult(
+        Effect.fail(new ImportNotFound({ importId: "a-stale-id" })),
       )
 
       expect(result).toEqual({ ok: false, reason: "gone" })

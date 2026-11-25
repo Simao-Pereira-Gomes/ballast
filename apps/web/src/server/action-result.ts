@@ -1,5 +1,6 @@
 import {
   HoldingNotFound,
+  ImportNotFound,
   InvalidAccount,
   InvalidHolding,
   InvalidImport,
@@ -17,10 +18,12 @@ const isFixable = (error: unknown): error is Fixable =>
   error instanceof InvalidImport
 
 /** What an action acted on and that may since have gone, e.g. deleted in another tab. */
-type Gone = TransactionNotFound | HoldingNotFound
+type Gone = TransactionNotFound | HoldingNotFound | ImportNotFound
 
 const isGone = (error: unknown): error is Gone =>
-  error instanceof TransactionNotFound || error instanceof HoldingNotFound
+  error instanceof TransactionNotFound ||
+  error instanceof HoldingNotFound ||
+  error instanceof ImportNotFound
 
 type ProblemsOf<E> = E extends Fixable ? E["problems"][number] : never
 

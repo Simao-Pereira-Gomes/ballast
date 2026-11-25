@@ -1,6 +1,7 @@
 import {
   AccountId,
   ImportId,
+  ImportNotFound,
   InvalidImport,
   Money,
   OwnerId,
@@ -60,11 +61,12 @@ const ImportRow = Schema.Struct({
   fileName: Schema.String,
   format: Schema.String,
   lineCount: Schema.Number,
+  skippedCount: Schema.Number,
   importedAt: Schema.Date,
 })
 
 const importColumns = `id, owner_id AS "ownerId", account_id AS "accountId", file_name AS "fileName",
-  format, line_count AS "lineCount", imported_at AS "importedAt"`
+  format, line_count AS "lineCount", skipped_count AS "skippedCount", imported_at AS "importedAt"`
 
 const reject = (...problems: readonly ImportProblem[]) =>
   Effect.fail(new InvalidImport({ problems }))
@@ -118,9 +120,10 @@ export const importStatement = (ownerId: OwnerId, accountId: string, file: Impor
             onNonEmpty: (newLines) =>
               Effect.gen(function* () {
                 const [row] = yield* sql<{ id: string }>`
-                  INSERT INTO import (owner_id, account_id, file_name, format, line_count)
+                  INSERT INTO import
+                    (owner_id, account_id, file_name, format, line_count, skipped_count)
                   VALUES (${ownerId}, ${account.id}, ${fileName}, ${statement.format},
-                          ${newLines.length})
+                          ${newLines.length}, ${skipped})
                   RETURNING id
                 `
                 if (row === undefined) return yield* Effect.die("INSERT … RETURNING gave no row")
@@ -176,10 +179,51 @@ export const listImports = (ownerId: OwnerId, accountId: AccountId) =>
       WHERE owner_id = ${ownerId} AND account_id = ${accountId}
       ORDER BY imported_at DESC, id
     `
-    const imports: readonly Import[] = yield* Schema.decodeUnknownEffect(Schema.Array(ImportRow))(
-      rows,
-    ).pipe(Effect.orDie)
+    const decoded = yield* Schema.decodeUnknownEffect(Schema.Array(ImportRow))(rows).pipe(
+      Effect.orDie,
+    )
+    const imports: readonly Import[] = decoded.map((row) => ({
+      id: row.id,
+      ownerId: row.ownerId,
+      accountId: row.accountId,
+      fileName: row.fileName,
+      format: row.format,
+      lineCount: row.lineCount,
+      skippedCount: row.skippedCount,
+      importedAt: Temporal.Instant.fromEpochMilliseconds(row.importedAt.getTime()),
+    }))
     return imports
+  })
+
+/**
+ * Undoes one of the Owner's Imports: removes exactly the Transactions and
+ * Balance Checkpoints it created, and the Import itself. Manual Transactions
+ * and other Imports are untouched, and the same file can then be imported
+ * again as a fresh Import. Fails with `ImportNotFound` when the Import isn't
+ * the Owner's or was already undone.
+ */
+export const undoImport = (ownerId: OwnerId, importId: string) =>
+  Effect.gen(function* () {
+    const id = yield* Effect.fromOption(Schema.decodeUnknownOption(ImportId)(importId)).pipe(
+      Effect.mapError(() => new ImportNotFound({ importId })),
+    )
+    const sql = yield* SqlClient
+    const undone = yield* sql
+      .withTransaction(
+        Effect.gen(function* () {
+          yield* sql`DELETE FROM balance_checkpoint WHERE owner_id = ${ownerId} AND import_id = ${id}`
+          yield* sql`DELETE FROM transaction WHERE owner_id = ${ownerId} AND import_id = ${id}`
+          return yield* sql`DELETE FROM import WHERE owner_id = ${ownerId} AND id = ${id} RETURNING id`
+        }),
+      )
+      .pipe(Effect.orDie)
+    if (undone.length === 0) yield* new ImportNotFound({ importId })
+  })
+
+export const undoImportForCurrentOwner = (importId: string) =>
+  Effect.gen(function* () {
+    const owner = yield* CurrentOwner
+    yield* undoImport(owner.id, importId)
   })
 
 export const importStatementForCurrentOwner = (accountId: string, file: ImportFile) =>

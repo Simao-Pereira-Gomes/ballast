@@ -1,5 +1,11 @@
 import { directionOf } from "@ballast/core"
-import type { AccountSummary, BalanceDiscrepancy, Holding, Transaction } from "@ballast/core"
+import type {
+  AccountSummary,
+  BalanceDiscrepancy,
+  Holding,
+  Import,
+  Transaction,
+} from "@ballast/core"
 import { Link } from "@tanstack/react-router"
 import {
   Archive,
@@ -23,6 +29,8 @@ import type {
 import { HoldingsSection } from "@/components/holdings/holdings-section.tsx"
 import { ImportDialog } from "@/components/statement-import/import-dialog.tsx"
 import type { ImportOutcome } from "@/components/statement-import/import-dialog.tsx"
+import { ImportHistory } from "@/components/statement-import/import-history.tsx"
+import type { UndoOutcome } from "@/components/statement-import/import-history.tsx"
 import { CompactEmpty } from "@/components/shell/compact-empty.tsx"
 import { Button } from "@/components/ui/button.tsx"
 import { cn } from "@/lib/utils.ts"
@@ -44,17 +52,20 @@ import type {
  * an active Account. Manual Transactions can be edited and deleted, imported
  * ones only deleted; the ways to add one mirror the Accounts page. An Investment
  * also shows its Valuation and Holdings. The Account itself can be edited
- * and archived, and an archived one unarchived.
+ * and archived, and an archived one unarchived. Above the Transactions, a
+ * collapsed Import history lists each Import, which can be undone.
  */
 export function AccountLedgerPage({
   account,
   transactions,
   holdings,
+  imports,
   discrepancies,
   onAdd,
   onEdit,
   onDelete,
   onImport,
+  onUndoImport,
   onAddHolding,
   onChangeHolding,
   onRemoveHolding,
@@ -65,6 +76,7 @@ export function AccountLedgerPage({
   account: AccountSummary
   transactions: readonly Transaction[]
   holdings: readonly Holding[]
+  imports: readonly Import[]
   discrepancies: readonly BalanceDiscrepancy[]
   onAddHolding: (details: HoldingFormDetails) => Promise<HoldingOutcome>
   onChangeHolding: (holding: Holding, details: HoldingFormDetails) => Promise<HoldingOutcome>
@@ -73,6 +85,7 @@ export function AccountLedgerPage({
   onEdit: (transaction: Transaction, details: TransactionFormDetails) => Promise<TransactionOutcome>
   onDelete: (transaction: Transaction) => Promise<DeleteOutcome>
   onImport: (file: File) => Promise<ImportOutcome>
+  onUndoImport: (imported: Import) => Promise<UndoOutcome>
   onChangeAccount: (details: AccountFormDetails) => Promise<AccountOutcome>
   onArchive: () => Promise<void>
   onUnarchive: () => Promise<void>
@@ -245,6 +258,8 @@ export function AccountLedgerPage({
           onRemove={onRemoveHolding}
         />
       )}
+
+      <ImportHistory imports={imports} onUndo={onUndoImport} />
 
       <section aria-labelledby="transactions-heading" className="mt-8">
         {/* Beside Holdings the section needs a visible heading; alone, the page title is enough. */}

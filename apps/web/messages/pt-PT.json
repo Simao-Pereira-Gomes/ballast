@@ -244,5 +244,12 @@
   "import_summary_balance_checkpoint": "Saldo de referência (indicado pelo banco)",
   "balance_discrepancy_title": "Discrepância de saldo",
   "balance_discrepancy_body": "Os movimentos não somam o saldo indicado pelo banco, por isso pode faltar um movimento, haver um repetido ou algum estar errado.",
-  "balance_discrepancy_item": "Em {date} o banco indicou {stated}, mas os movimentos somam {computed}: uma diferença de {difference}."
+  "balance_discrepancy_item": "Em {date} o banco indicou {stated}, mas os movimentos somam {computed}: uma diferença de {difference}.",
+  "import_history_heading": "Histórico de importações ({count})",
+  "import_history_counts": "{date} · {newCount} novos / {skippedCount} ignorados",
+  "undo_import": "Anular",
+  "undo_import_named": "Anular a importação de {fileName}",
+  "confirm_undo_import": "Remover movimentos ({count})",
+  "undoing_import": "A anular…",
+  "import_already_undone": "Esta importação já tinha sido anulada, por isso não havia nada a alterar."
 }

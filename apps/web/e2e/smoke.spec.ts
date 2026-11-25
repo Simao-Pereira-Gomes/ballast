@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { portuguese, workbookOf } from "../test/integration/workbooks.ts"
 
 test("the Owner opens their first Account from the empty state", async ({ page }) => {
   await page.goto("/")
@@ -288,4 +289,38 @@ test("the Owner records Holdings and sees the Asset Mix and concentration they a
   await edit.getByRole("button", { name: "Remove for good" }).click()
   await expect(edit).toBeHidden()
   await expect(page.getByRole("region", { name: "Market value" })).toContainText("€800.00")
+})
+
+test("the Owner finds the Import history and undoes an Import", async ({ page }) => {
+  await page.goto("/")
+  await page.getByRole("button", { name: "Open Account" }).click()
+  const accountDialog = page.getByRole("dialog", { name: "Open an Account" })
+  await accountDialog.getByLabel("Name").fill("Santander Joint")
+  await accountDialog.getByRole("radio", { name: /Operating Cash/ }).check()
+  await accountDialog.getByRole("button", { name: "Open Account" }).click()
+  await page.getByRole("link", { name: /Santander Joint/ }).click()
+
+  await page.getByRole("button", { name: "Import" }).first().click()
+  const importDialog = page.getByRole("dialog", { name: "Import a bank export" })
+  await importDialog.getByLabel("Bank export").setInputFiles({
+    name: "movimentos-setembro.xls",
+    mimeType: "application/vnd.ms-excel",
+    buffer: Buffer.from(workbookOf(portuguese)),
+  })
+  await importDialog.getByRole("button", { name: "Import" }).click()
+  await expect(page.getByRole("heading", { name: "Import complete" })).toBeVisible()
+  await page.getByRole("button", { name: "Done" }).click()
+
+  const history = page.locator("details", { hasText: "Import history (1)" })
+  await expect(history).toBeVisible()
+  await expect(history.getByText("movimentos-setembro.xls")).toBeHidden()
+  await history.getByText("Import history (1)").click()
+  await expect(history.getByText("movimentos-setembro.xls")).toBeVisible()
+  await expect(history).toContainText("19 new / 0 skipped")
+
+  await history.getByRole("button", { name: "Undo the Import of movimentos-setembro.xls" }).click()
+  await history.getByRole("button", { name: "Remove Transactions (19)" }).click()
+
+  await expect(page.getByText("Import history")).toBeHidden()
+  await expect(page.getByText("No Transactions yet")).toBeVisible()
 })

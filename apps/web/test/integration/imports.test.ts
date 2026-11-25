@@ -70,7 +70,7 @@ layer(TestDatabase)("Santander Import", (it) => {
     Effect.gen(function* () {
       const owner = yield* createOwner
       const account = yield* openCurrentAccount(owner)
-      const before = new Date()
+      const before = Temporal.Now.instant().subtract({ seconds: 1 })
 
       const summary = yield* importStatement(owner, account.id, santanderFile)
 
@@ -85,7 +85,8 @@ layer(TestDatabase)("Santander Import", (it) => {
         format: "santander",
         lineCount: 19,
       })
-      expect(recorded.importedAt.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000)
+      expect(recorded.importedAt).toBeInstanceOf(Temporal.Instant)
+      expect(Temporal.Instant.compare(recorded.importedAt, before)).toBeGreaterThanOrEqual(0)
     }),
   )
 

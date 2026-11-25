@@ -5,6 +5,7 @@ import accountLifecycle from "./migrations/0003_account_lifecycle.ts"
 import holdings from "./migrations/0004_holdings.ts"
 import imports from "./migrations/0005_imports.ts"
 import balanceCheckpoints from "./migrations/0006_balance_checkpoints.ts"
+import importSkippedCount from "./migrations/0007_import_skipped_count.ts"
 
 const applyMigrations = Migrator.make({})
 
@@ -17,6 +18,7 @@ export const migrate = applyMigrations({
     "0004_holdings": holdings,
     "0005_imports": imports,
     "0006_balance_checkpoints": balanceCheckpoints,
+    "0007_import_skipped_count": importSkippedCount,
   }),
   table: "schema_migration",
 })

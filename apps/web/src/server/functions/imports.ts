@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
-import { importStatementForCurrentOwner } from "../imports.ts"
+import { Schema } from "effect"
+import { importStatementForCurrentOwner, undoImportForCurrentOwner } from "../imports.ts"
 import { runAction } from "../runtime.ts"
 
 export type { ImportProblem } from "@ballast/core"
@@ -25,3 +26,7 @@ export const importStatement = createServerFn({ method: "POST" })
       }),
     ),
   )
+
+export const undoImport = createServerFn({ method: "POST" })
+  .validator(Schema.toStandardSchemaV1(Schema.Struct({ importId: Schema.String })))
+  .handler(({ data }) => runAction(undoImportForCurrentOwner(data.importId)))
