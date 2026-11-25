@@ -22,7 +22,8 @@ import { importProblemMessage } from "@/ui/import-problems.ts"
 /** What the Owner is shown after an Import. */
 export interface ImportSummaryView {
   readonly fileName: string
-  readonly lineCount: number
+  readonly newCount: number
+  readonly skippedCount: number
   readonly firstDate: Temporal.PlainDate
   readonly lastDate: Temporal.PlainDate
   readonly moneyIn: Money.Money
@@ -212,7 +213,11 @@ function ImportSummaryPanel({ summary }: Readonly<{ summary: ImportSummaryView }
           {m.import_done_title()}
         </DialogTitle>
         <DialogDescription>
-          {m.import_done_description({ count: summary.lineCount, fileName: summary.fileName })}
+          {m.import_done_description({
+            newCount: summary.newCount,
+            skippedCount: summary.skippedCount,
+            fileName: summary.fileName,
+          })}
         </DialogDescription>
       </DialogHeader>
       <dl className="divide-y divide-border rounded-2xl bg-secondary">

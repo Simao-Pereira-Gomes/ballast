@@ -30,6 +30,8 @@ export interface StatementLine {
   readonly description: string
   /** `normaliseDescription` of the description. */
   readonly descriptionKey: string
+  /** The bank's own identifier for the movement, when its export has one. */
+  readonly bankId?: string
 }
 
 /** What a bank export says, once read. */
@@ -57,8 +59,6 @@ export type LineProblem =
   | "description_too_long"
   | "incomplete_line"
   | "balance_mismatch"
-  /** A line that is already a Transaction on the Account. */
-  | "already_imported"
 
 /** Why a file can't be imported. Nothing is imported when there is any. */
 export type ImportProblem =
@@ -83,21 +83,47 @@ export interface StatementFormat {
 }
 
 /**
- * A fingerprint per line that identifies the movement on its Account: date,
- * amount, normalised description and, for identical lines, which occurrence
- * it is within the file. The same movement in another export of the same
- * period gets the same fingerprint.
+ * A fingerprint per line that identifies the movement on its Account. When
+ * the bank gives the line its own ID, that is the identity. Otherwise it is
+ * the date, amount, normalised description and, for identical lines, which
+ * occurrence it is within the file. The same movement in another export of
+ * the same period gets the same fingerprint.
  */
 export const fingerprintLines = (
-  lines: readonly Pick<StatementLine, "date" | "amount" | "descriptionKey">[],
+  lines: readonly Pick<StatementLine, "date" | "amount" | "descriptionKey" | "bankId">[],
 ): readonly string[] => {
   const seen = new Map<string, number>()
   return lines.map((line) => {
+    if (line.bankId !== undefined) return `id|${line.bankId}`
     const identity = `${line.date.toString()}|${line.amount.cents.toString()}|${line.descriptionKey}`
     const occurrence = seen.get(identity) ?? 0
     seen.set(identity, occurrence + 1)
     return `${identity}|${occurrence.toString()}`
   })
+}
+
+/** A statement line paired with its fingerprint. */
+export interface FingerprintedLine<Line> {
+  readonly line: Line
+  readonly fingerprint: string
+}
+
+/**
+ * Splits a file's lines into the ones the Account doesn't hold yet and a
+ * count of those it already does (their fingerprints are in `known`). Lines
+ * stay in file order, so overlapping or repeated exports never double-count.
+ */
+export const separateNewLines = <Line extends Parameters<typeof fingerprintLines>[0][number]>(
+  lines: readonly Line[],
+  known: ReadonlySet<string>,
+): { readonly fresh: readonly FingerprintedLine<Line>[]; readonly skipped: number } => {
+  const fingerprints = fingerprintLines(lines)
+  const fresh: FingerprintedLine<Line>[] = []
+  lines.forEach((line, index) => {
+    const fingerprint = fingerprints[index] ?? ""
+    if (!known.has(fingerprint)) fresh.push({ line, fingerprint })
+  })
+  return { fresh, skipped: lines.length - fresh.length }
 }
 
 /** What a statement's lines moved: the sum of money in and of money out (negative). */

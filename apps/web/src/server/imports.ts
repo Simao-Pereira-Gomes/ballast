@@ -5,6 +5,7 @@ import {
   Money,
   OwnerId,
   fingerprintLines,
+  separateNewLines,
   maxImportMegabytes,
   parseStatement,
   statementTotals,
@@ -30,14 +31,20 @@ export const importExtensions = [".xls", ".xlsx"] as const
 
 /** What the Owner is told after an Import. */
 export interface ImportSummary {
-  readonly importId: ImportId
+  /** The Import recorded, or `null` when every line was already imported. */
+  readonly importId: ImportId | null
   readonly fileName: string
+  /** Lines in the file. */
   readonly lineCount: number
+  /** Lines that became Transactions. */
+  readonly newCount: number
+  /** Lines the Account already held, left out. */
+  readonly skippedCount: number
   readonly firstDate: Temporal.PlainDate
   readonly lastDate: Temporal.PlainDate
-  /** The sum of the lines that brought money in. */
+  /** The sum of the file's lines that brought money in. */
   readonly moneyIn: Money.Money
-  /** The sum of the lines that took money out: negative. */
+  /** The sum of the file's lines that took money out: negative. */
   readonly moneyOut: Money.Money
   /** The export's Balance Checkpoint: the bank's balance after the newest line. Not stored yet. */
   readonly balanceCheckpoint: Money.Money
@@ -75,11 +82,12 @@ const checkFile = (file: ImportFile) => {
 
 /**
  * Imports a bank export into one of the Owner's active Accounts: every
- * statement line becomes a Transaction recording this Import. All or
- * nothing: any problem with the file, any line already imported into the
- * Account, or an Archived Account fails with `InvalidImport` naming every
- * problem, and nothing is stored. Fails with `AccountNotFound` when the
- * Account isn't the Owner's.
+ * statement line the Account doesn't hold yet becomes a Transaction
+ * recording this Import; lines it already holds are skipped, so overlapping
+ * exports never double-count. All or nothing: any problem with the file or
+ * an Archived Account fails with `InvalidImport` naming every problem, and
+ * nothing is stored. When every line is already imported no Import is
+ * recorded. Fails with `AccountNotFound` when the Account isn't the Owner's.
  */
 export const importStatement = (ownerId: OwnerId, accountId: string, file: ImportFile) =>
   Effect.gen(function* () {
@@ -91,52 +99,49 @@ export const importStatement = (ownerId: OwnerId, accountId: string, file: Impor
     const fingerprints = fingerprintLines(statement.lines)
 
     const sql = yield* SqlClient
-    const existing = new Set(
+    const known = new Set(
       (yield* sql<{ fingerprint: string }>`
         SELECT fingerprint FROM transaction
         WHERE owner_id = ${ownerId} AND account_id = ${account.id}
           AND fingerprint IN ${sql.in(fingerprints)}
       `).map((row) => row.fingerprint),
     )
-    const repeated = statement.lines.filter((_, index) => existing.has(fingerprints[index] ?? ""))
-    if (repeated.length > 0) {
-      return yield* reject(
-        ...repeated
-          .map((line) => ({ row: line.row, problem: "already_imported" as const }))
-          .toSorted((a, b) => a.row - b.row),
-      )
-    }
+    const { fresh, skipped } = separateNewLines(statement.lines, known)
 
     const fileName = baseName(file.name)
-    const recorded = yield* sql
-      .withTransaction(
-        Effect.gen(function* () {
-          const [row] = yield* sql<{ id: string }>`
-            INSERT INTO import (owner_id, account_id, file_name, format, line_count)
-            VALUES (${ownerId}, ${account.id}, ${fileName}, ${statement.format},
-                    ${statement.lines.length})
-            RETURNING id
-          `
-          if (row === undefined) return yield* Effect.die("INSERT … RETURNING gave no row")
-          yield* sql`
-            INSERT INTO transaction ${sql.insert(
-              Arr.map(statement.lines, (line, index) => ({
-                owner_id: ownerId,
-                account_id: account.id,
-                date: line.date.toString(),
-                amount_cents: line.amount.cents.toString(),
-                description: line.description,
-                description_key: line.descriptionKey,
-                source: "import",
-                import_id: row.id,
-                fingerprint: fingerprints[index] ?? null,
-              })),
-            )}
-          `
-          return row.id
-        }),
-      )
-      .pipe(Effect.flatMap(Schema.decodeUnknownEffect(ImportId)), Effect.orDie)
+    const recorded = yield* Arr.match(fresh, {
+      onEmpty: () => Effect.succeed(null),
+      onNonEmpty: (newLines) =>
+        sql
+          .withTransaction(
+            Effect.gen(function* () {
+              const [row] = yield* sql<{ id: string }>`
+                INSERT INTO import (owner_id, account_id, file_name, format, line_count)
+                VALUES (${ownerId}, ${account.id}, ${fileName}, ${statement.format},
+                        ${newLines.length})
+                RETURNING id
+              `
+              if (row === undefined) return yield* Effect.die("INSERT … RETURNING gave no row")
+              yield* sql`
+                INSERT INTO transaction ${sql.insert(
+                  Arr.map(newLines, ({ line, fingerprint }) => ({
+                    owner_id: ownerId,
+                    account_id: account.id,
+                    date: line.date.toString(),
+                    amount_cents: line.amount.cents.toString(),
+                    description: line.description,
+                    description_key: line.descriptionKey,
+                    source: "import",
+                    import_id: row.id,
+                    fingerprint,
+                  })),
+                )}
+              `
+              return row.id
+            }),
+          )
+          .pipe(Effect.flatMap(Schema.decodeUnknownEffect(ImportId)), Effect.orDie),
+    })
 
     const { balance } = yield* getAccount(ownerId, account.id)
     const [first] = statement.lines
@@ -145,6 +150,8 @@ export const importStatement = (ownerId: OwnerId, accountId: string, file: Impor
       importId: recorded,
       fileName,
       lineCount: statement.lines.length,
+      newCount: fresh.length,
+      skippedCount: skipped,
       firstDate: first.date,
       lastDate: last.date,
       ...statementTotals(statement.lines),

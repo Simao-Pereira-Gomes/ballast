@@ -15,7 +15,6 @@ const line: Record<LineCode, (inputs: { row: string }) => string> = {
     m.import_problem_description_too_long({ row, limit: maxDescriptionLength.toString() }),
   incomplete_line: m.import_problem_incomplete_line,
   balance_mismatch: m.import_problem_balance_mismatch,
-  already_imported: m.import_problem_already_imported,
 }
 
 const file: Record<Exclude<FileCode, "unrecognised_layout">, () => string> = {
