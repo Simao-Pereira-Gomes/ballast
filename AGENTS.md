@@ -14,6 +14,10 @@
 
 - **No AI attribution footers.** Do not add "Generated with Claude Code" or similar attribution lines to pull request descriptions, issues or comments unless the repository owner explicitly asks for it in that request.
 
+## Implementing a ticket
+
+Grill the design with the Owner (`/grill-with-docs`), agree the test seams, then build test-first (`/tdd`). Run `/code-review` before committing, and commit and open the PR only after the review and the Owner's go-ahead.
+
 ## Domain
 
 - Use the vocabulary in [`CONTEXT.md`](./CONTEXT.md) in code, docs and issues, and respect the decisions in [`docs/adr/`](./docs/adr).
@@ -28,7 +32,7 @@ Stack and rationale: ADRs 0003–0005.
 - **Expected failures are typed errors; bugs throw.** A Balance Discrepancy or an uncertain classification is normal output, not an error.
 - **Money is integer cents through `Money`.** No floating point on amounts, no `toFixed`, no display formatting outside the core `Money` formatter. Postgres stores amounts as `bigint`.
 - **Interface text only through messages.** Every user-facing string lives in `apps/web/messages/{en,pt-PT}.json` (Paraglide, ADR 0006), using the pt-PT terms from `CONTEXT.md`. The core returns codes and parameters, never sentences; `Money.format` and `formatDate` take a `Locale`.
-- **Calendar dates are `Temporal.PlainDate`.** No `Date` in domain code; `Date`/`Instant` only for technical timestamps such as `created_at`.
+- **Calendar dates are `Temporal.PlainDate`.** No `Date` in domain code; technical timestamps such as `created_at` are `Temporal.Instant`, converted from the driver's `Date` at the persistence boundary (ADR 0003).
 - **Everything is Owner-scoped.** Every persistence function takes an `OwnerId`, and every table has `owner_id` with composite `(owner_id, …)` foreign keys.
 - **Migrations are handwritten SQL**, committed and reviewed, run by Effect's `Migrator`.
 - **No real bank data in the repository.** Test fixtures are synthetic.

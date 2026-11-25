@@ -16,7 +16,7 @@ Ballast is a single TanStack Start (React) app on Node LTS, in a pnpm workspace 
 ## Consequences
 
 - `packages/core` has no runtime dependencies except `effect` (ADR 0004), and its tsconfig leaves out Node types, so I/O in the core doesn't type-check.
-- Calendar dates are `Temporal.PlainDate` (native in Node) and Postgres `date`. JavaScript `Date` is only for technical timestamps.
+- Calendar dates are `Temporal.PlainDate` (native in Node) and Postgres `date`. Technical timestamps, such as when an Import ran, are `Temporal.Instant` and Postgres `timestamptz`; the driver's JavaScript `Date` is converted at the persistence boundary and never leaves it. (Amended 2026-11-25: this said `Date` was acceptable for technical timestamps. `Instant` is immutable and needs no detour to show as a day.)
 - UI: Tailwind v4, shadcn/ui, TanStack Table, Recharts.
 - Tests: Vitest, `fast-check` for Money and Ledger Ingest invariants, Testcontainers Postgres for integration tests, Playwright for the smoke test.
 - Code quality: TypeScript 7 (native) with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` and `verbatimModuleSyntax`, plus Prettier. Linting is oxlint with `oxlint-tsgolint`, whose type-aware rules run on typescript-go, so they see the same types as `tsc`. We rejected typescript-eslint because it supports only TypeScript below 6.1, and Biome because its type-aware rules (`noFloatingPromises`, `useExhaustiveSwitchCases`, the `noUnsafe*` family) were still experimental (Nursery) in 2.6 and approximate types instead of using the compiler.
