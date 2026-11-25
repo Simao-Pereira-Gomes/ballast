@@ -50,6 +50,22 @@
       {
         "allow": ["_tag"]
       }
+    ],
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@effect/schema",
+            "message": "Effect 4 only: import Schema from \"effect\" (AGENTS.md)."
+          },
+          {
+            "name": "effect",
+            "importNames": ["Either"],
+            "message": "Effect 4 only: use Result, not Either (AGENTS.md)."
+          }
+        ]
+      }
     ]
   },
   "overrides": [
@@ -67,6 +83,33 @@
               {
                 "group": ["@ballast/core", "effect", "effect/*", "@effect/*"],
                 "message": "Routes contain no domain or Effect code; go through a server function or src/ui."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/core/src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@effect/schema",
+                "message": "Effect 4 only: import Schema from \"effect\" (AGENTS.md)."
+              },
+              {
+                "name": "effect",
+                "importNames": ["Either", "Effect", "Layer", "Context"],
+                "message": "The core stays pure: use only Effect's pure modules, never Effect, Layer or Context (AGENTS.md)."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["effect/Effect", "effect/Layer", "effect/Context", "@effect/*"],
+                "message": "The core stays pure and depends on nothing except effect: no Effect, Layer or Context, and no other @effect packages (AGENTS.md)."
               }
             ]
           }

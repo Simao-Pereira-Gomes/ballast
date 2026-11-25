@@ -9,4 +9,14 @@ const plainDate = createSerializationAdapter({
   fromSerializable: (text: string) => Temporal.PlainDate.from(text),
 })
 
-export const startInstance = createStart(() => ({ serializationAdapters: [plainDate] }))
+/** Moments, such as when an Import ran, cross as ISO text, e.g. "2026-11-25T20:15:05.013Z". */
+const instant = createSerializationAdapter({
+  key: "Temporal.Instant",
+  test: (value): value is Temporal.Instant => value instanceof Temporal.Instant,
+  toSerializable: (moment) => moment.toString(),
+  fromSerializable: (text: string) => Temporal.Instant.from(text),
+})
+
+export const startInstance = createStart(() => ({
+  serializationAdapters: [plainDate, instant],
+}))

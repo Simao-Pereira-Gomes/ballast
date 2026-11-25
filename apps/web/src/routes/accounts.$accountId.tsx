@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start"
 import { AccountLedgerPage } from "../components/transactions/account-ledger-page.tsx"
 import { archiveAccount, changeAccount, unarchiveAccount } from "../server/functions/accounts.ts"
 import { addHolding, changeHolding, removeHolding } from "../server/functions/holdings.ts"
-import { importStatement } from "../server/functions/imports.ts"
+import { importStatement, undoImport } from "../server/functions/imports.ts"
 import {
   addTransaction,
   deleteTransaction,
@@ -17,12 +17,13 @@ export const Route = createFileRoute("/accounts/$accountId")({
 })
 
 function AccountLedgerRoute() {
-  const { account, transactions, holdings, discrepancies } = Route.useLoaderData()
+  const { account, transactions, holdings, imports, discrepancies } = Route.useLoaderData()
   const router = useRouter()
   const add = useServerFn(addTransaction)
   const edit = useServerFn(editTransaction)
   const remove = useServerFn(deleteTransaction)
   const importFile = useServerFn(importStatement)
+  const undo = useServerFn(undoImport)
   const change = useServerFn(changeAccount)
   const archive = useServerFn(archiveAccount)
   const unarchive = useServerFn(unarchiveAccount)
@@ -42,6 +43,7 @@ function AccountLedgerRoute() {
       account={account}
       transactions={transactions}
       holdings={holdings}
+      imports={imports}
       discrepancies={discrepancies}
       onAdd={async (details) =>
         refreshAfter(await add({ data: { accountId: account.id, ...details } }))
@@ -58,6 +60,9 @@ function AccountLedgerRoute() {
         data.set("file", file)
         return refreshAfter(await importFile({ data }))
       }}
+      onUndoImport={async (imported) =>
+        refreshAfter(await undo({ data: { importId: imported.id } }))
+      }
       onAddHolding={async (details) =>
         refreshAfter(await addHoldingFn({ data: { accountId: account.id, ...details } }))
       }

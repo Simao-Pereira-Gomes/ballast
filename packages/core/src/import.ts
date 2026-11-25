@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import { Data, Schema } from "effect"
 import type { AccountId } from "./account.ts"
 import type { OwnerId } from "./owner.ts"
 
@@ -13,6 +13,15 @@ export interface Import {
   readonly fileName: string
   /** Which Statement Parser format read the file. */
   readonly format: string
+  /** Lines that became Transactions. */
   readonly lineCount: number
-  readonly importedAt: Date
+  /** Lines in the file the Account already held, left out. */
+  readonly skippedCount: number
+  /** When the Import ran: a technical timestamp, not a calendar date. */
+  readonly importedAt: Temporal.Instant
 }
+
+/** No Import with this id belongs to the Owner, e.g. it was already undone. */
+export class ImportNotFound extends Data.TaggedError("ImportNotFound")<{
+  readonly importId: string
+}> {}
