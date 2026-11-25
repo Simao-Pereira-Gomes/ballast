@@ -37,6 +37,8 @@ layer(TestDatabase)("Santander Import", (it) => {
       expect(summary).toMatchObject({
         fileName: "movimentos-setembro.xls",
         lineCount: 19,
+        newCount: 19,
+        skippedCount: 0,
         // 1850 + 40 + 19.99 + 120 + 0.03
         moneyIn: Money.eur(203002n),
         // 1004.00 − 412.35 opening balance − 2030.02 in
@@ -185,19 +187,50 @@ layer(TestDatabase)("Santander Import", (it) => {
     }),
   )
 
-  it.effect("rejects a file whose lines are already imported, and imports nothing more", () =>
+  it.effect("re-importing the same file adds nothing and records no Import", () =>
     Effect.gen(function* () {
       const owner = yield* createOwner
       const account = yield* openCurrentAccount(owner)
       yield* importStatement(owner, account.id, santanderFile)
 
-      const error = yield* Effect.flip(importStatement(owner, account.id, santanderFile))
+      const summary = yield* importStatement(owner, account.id, santanderFile)
 
-      const problems = problemsOf(error)
-      expect(problems).toHaveLength(19)
-      expect(problems).toContainEqual({ row: 8, problem: "already_imported" })
+      expect(summary).toMatchObject({
+        importId: null,
+        lineCount: 19,
+        newCount: 0,
+        skippedCount: 19,
+        accountBalance: Money.eur(59165n),
+      })
       expect(yield* listTransactions(owner, account.id)).toHaveLength(19)
       expect(yield* listImports(owner, account.id)).toHaveLength(1)
+    }),
+  )
+
+  it.effect("an overlapping export adds only the lines outside the overlap", () =>
+    Effect.gen(function* () {
+      const owner = yield* createOwner
+      const account = yield* openCurrentAccount(owner)
+      // Lines run newest first from row index 7: the first file holds the
+      // newest 12 lines, the second the oldest 12, so 5 are in both.
+      const head = portuguese.rows.slice(0, 7)
+      const lines = portuguese.rows.slice(7).filter((row) => row.some((cell) => cell !== null))
+      const newer = { ...portuguese, rows: [...head, ...lines.slice(0, 12)] }
+      const older = { ...portuguese, rows: [...head, ...lines.slice(-12)] }
+
+      const first = yield* importStatement(owner, account.id, {
+        name: "newer.xls",
+        bytes: workbookOf(newer),
+      })
+      const second = yield* importStatement(owner, account.id, {
+        name: "older.xls",
+        bytes: workbookOf(older),
+      })
+
+      expect(first).toMatchObject({ newCount: 12, skippedCount: 0 })
+      expect(second).toMatchObject({ lineCount: 12, newCount: 7, skippedCount: 5 })
+      expect(yield* listTransactions(owner, account.id)).toHaveLength(19)
+      expect(second.accountBalance).toEqual(Money.eur(59165n))
     }),
   )
 
@@ -214,7 +247,7 @@ layer(TestDatabase)("Santander Import", (it) => {
       yield* importStatement(owner, first.id, santanderFile)
       const summary = yield* importStatement(owner, second.id, santanderFile)
 
-      expect(summary.lineCount).toBe(19)
+      expect(summary.newCount).toBe(19)
     }),
   )
 

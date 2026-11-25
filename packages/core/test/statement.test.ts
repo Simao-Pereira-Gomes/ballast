@@ -3,6 +3,7 @@ import { assert, describe, expect, it } from "vitest"
 import {
   Money,
   fingerprintLines,
+  separateNewLines,
   normaliseDescription,
   parseStatement,
   statementTotals,
@@ -284,5 +285,48 @@ describe("fingerprintLines", () => {
     const [first, second] = fingerprintLines(bakery)
     expect(first).not.toBe(second)
     expect(fingerprintLines(bakery.slice(0, 1))).toEqual([first])
+  })
+})
+
+describe("separateNewLines", () => {
+  const lines = parsed(portuguese).lines
+  const fingerprints = fingerprintLines(lines)
+
+  it("keeps every line when the Account holds none", () => {
+    const { fresh, skipped } = separateNewLines(lines, new Set())
+    expect(fresh.map((f) => f.line)).toEqual(lines)
+    expect(fresh.map((f) => f.fingerprint)).toEqual(fingerprints)
+    expect(skipped).toBe(0)
+  })
+
+  it("keeps nothing when the whole file was imported before", () => {
+    const { fresh, skipped } = separateNewLines(lines, new Set(fingerprints))
+    expect(fresh).toEqual([])
+    expect(skipped).toBe(lines.length)
+  })
+
+  it("keeps only the lines outside an overlapping range", () => {
+    const known = new Set(fingerprints.slice(5))
+    const { fresh, skipped } = separateNewLines(lines, known)
+    expect(fresh.map((f) => f.line)).toEqual(lines.slice(0, 5))
+    expect(skipped).toBe(lines.length - 5)
+  })
+
+  it("keeps identical same-day lines, and skips them all on re-import", () => {
+    const coffee = lines.filter((line) => line.description === "Compra Padaria Central")
+    expect(coffee.length).toBeGreaterThan(1)
+    const first = separateNewLines(coffee, new Set())
+    expect(first.fresh).toHaveLength(coffee.length)
+    const again = separateNewLines(coffee, new Set(first.fresh.map((f) => f.fingerprint)))
+    expect(again.skipped).toBe(coffee.length)
+  })
+
+  it("identifies a line by the bank's ID when it has one", () => {
+    const line = lines[0]
+    const withId = { ...line, bankId: "TX-1" }
+    const edited = { ...withId, description: "Other", descriptionKey: "other" }
+    expect(fingerprintLines([withId])).toEqual(fingerprintLines([edited]))
+    expect(fingerprintLines([withId])).not.toEqual(fingerprintLines([line]))
+    expect(separateNewLines([edited], new Set(fingerprintLines([withId]))).skipped).toBe(1)
   })
 })
