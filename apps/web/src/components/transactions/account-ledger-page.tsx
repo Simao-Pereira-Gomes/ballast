@@ -1,7 +1,15 @@
 import { directionOf } from "@ballast/core"
-import type { AccountSummary, Holding, Transaction } from "@ballast/core"
+import type { AccountSummary, BalanceDiscrepancy, Holding, Transaction } from "@ballast/core"
 import { Link } from "@tanstack/react-router"
-import { Archive, ChevronLeft, FileUp, Pencil, Plus, ReceiptText } from "lucide-react"
+import {
+  Archive,
+  ChevronLeft,
+  FileUp,
+  Pencil,
+  Plus,
+  ReceiptText,
+  TriangleAlert,
+} from "lucide-react"
 import { useRef, useState } from "react"
 import { AccountDialog } from "@/components/accounts/account-dialog.tsx"
 import type { AccountFormDetails, AccountOutcome } from "@/components/accounts/account-dialog.tsx"
@@ -42,6 +50,7 @@ export function AccountLedgerPage({
   account,
   transactions,
   holdings,
+  discrepancies,
   onAdd,
   onEdit,
   onDelete,
@@ -56,6 +65,7 @@ export function AccountLedgerPage({
   account: AccountSummary
   transactions: readonly Transaction[]
   holdings: readonly Holding[]
+  discrepancies: readonly BalanceDiscrepancy[]
   onAddHolding: (details: HoldingFormDetails) => Promise<HoldingOutcome>
   onChangeHolding: (holding: Holding, details: HoldingFormDetails) => Promise<HoldingOutcome>
   onRemoveHolding: (holding: Holding) => Promise<RemoveOutcome>
@@ -182,6 +192,34 @@ export function AccountLedgerPage({
             {unarchiving ? m.unarchiving_account() : m.unarchive_account()}
           </Button>
         </div>
+      )}
+
+      {discrepancies.length > 0 && (
+        <section
+          aria-labelledby="discrepancy-heading"
+          className="mt-6 rounded-2xl bg-destructive/10 p-4 text-sm"
+        >
+          <h2
+            id="discrepancy-heading"
+            className="flex items-center gap-2 font-semibold text-destructive"
+          >
+            <TriangleAlert className="size-4 shrink-0" aria-hidden />
+            {m.balance_discrepancy_title()}
+          </h2>
+          <p className="mt-1">{m.balance_discrepancy_body()}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {discrepancies.map((discrepancy) => (
+              <li key={discrepancy.date.toString()}>
+                {m.balance_discrepancy_item({
+                  date: formatDay(discrepancy.date),
+                  stated: formatMoney(discrepancy.stated),
+                  computed: formatMoney(discrepancy.computed),
+                  difference: formatMoney(discrepancy.difference),
+                })}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">

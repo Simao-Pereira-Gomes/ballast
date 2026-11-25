@@ -6,12 +6,14 @@ import {
   TransactionNotFound,
   TransactionSource,
   decodeTransactionDetails,
+  findDiscrepancies,
   normaliseDescription,
 } from "@ballast/core"
 import type { Transaction } from "@ballast/core"
 import { Effect, Schema } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { getAccount } from "./accounts.ts"
+import { listCheckpoints } from "./checkpoints.ts"
 import { listHoldings } from "./holdings.ts"
 import { CurrentOwner } from "./owners.ts"
 
@@ -138,8 +140,8 @@ export const listTransactions = (ownerId: OwnerId, accountId: AccountId) =>
   })
 
 /**
- * One of the current Owner's Accounts, with its balance, its Transactions
- * and, for an Investment, its Holdings.
+ * One of the current Owner's Accounts, with its balance, its Transactions,
+ * any Balance Discrepancies and, for an Investment, its Holdings.
  */
 export const accountLedgerOfCurrentOwner = (accountId: string) =>
   Effect.gen(function* () {
@@ -147,7 +149,11 @@ export const accountLedgerOfCurrentOwner = (accountId: string) =>
     const account = yield* getAccount(owner.id, accountId)
     const transactions = yield* listTransactions(owner.id, account.id)
     const holdings = yield* listHoldings(owner.id, account.id)
-    return { account, transactions, holdings }
+    const discrepancies = findDiscrepancies(
+      yield* listCheckpoints(owner.id, account.id),
+      transactions,
+    )
+    return { account, transactions, holdings, discrepancies }
   })
 
 export const addManualTransactionForCurrentOwner = (accountId: string, input: unknown) =>

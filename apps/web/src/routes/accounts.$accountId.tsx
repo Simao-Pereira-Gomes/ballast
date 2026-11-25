@@ -17,7 +17,7 @@ export const Route = createFileRoute("/accounts/$accountId")({
 })
 
 function AccountLedgerRoute() {
-  const { account, transactions, holdings } = Route.useLoaderData()
+  const { account, transactions, holdings, discrepancies } = Route.useLoaderData()
   const router = useRouter()
   const add = useServerFn(addTransaction)
   const edit = useServerFn(editTransaction)
@@ -42,6 +42,7 @@ function AccountLedgerRoute() {
       account={account}
       transactions={transactions}
       holdings={holdings}
+      discrepancies={discrepancies}
       onAdd={async (details) =>
         refreshAfter(await add({ data: { accountId: account.id, ...details } }))
       }

@@ -241,5 +241,8 @@
   "source_import": "Imported",
   "imported_transaction_title": "Imported Transaction",
   "imported_transaction_description": "This Transaction came from an Import, so its details are the bank's and can't be edited. You can delete it.",
-  "import_summary_balance_checkpoint": "Balance Checkpoint (stated by the bank)"
+  "import_summary_balance_checkpoint": "Balance Checkpoint (stated by the bank)",
+  "balance_discrepancy_title": "Balance Discrepancy",
+  "balance_discrepancy_body": "The Transactions don't add up to the balance the bank stated, so a Transaction may be missing, duplicated or wrong.",
+  "balance_discrepancy_item": "On {date} the bank stated {stated} but the Transactions add up to {computed}: a difference of {difference}."
 }
