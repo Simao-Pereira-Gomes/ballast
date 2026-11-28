@@ -8,7 +8,7 @@ export interface Section {
   readonly label: () => string
   readonly shortLabel: () => string
   readonly icon: LucideIcon
-  readonly to?: "/"
+  readonly to?: "/" | "/review"
 }
 
 export type SectionKey = "accounts" | "transactions" | "review" | "forecast" | "allocation"
@@ -32,6 +32,7 @@ export const sections: readonly Section[] = [
     label: m.section_review,
     shortLabel: m.section_review_short,
     icon: Inbox,
+    to: "/review",
   },
   {
     key: "forecast",

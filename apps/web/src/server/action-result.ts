@@ -5,6 +5,7 @@ import {
   InvalidHolding,
   InvalidImport,
   InvalidTransaction,
+  MatchNotFound,
   TransactionNotFound,
 } from "@ballast/core"
 import { Effect } from "effect"
@@ -18,12 +19,13 @@ const isFixable = (error: unknown): error is Fixable =>
   error instanceof InvalidImport
 
 /** What an action acted on and that may since have gone, e.g. deleted in another tab. */
-type Gone = TransactionNotFound | HoldingNotFound | ImportNotFound
+type Gone = TransactionNotFound | HoldingNotFound | ImportNotFound | MatchNotFound
 
 const isGone = (error: unknown): error is Gone =>
   error instanceof TransactionNotFound ||
   error instanceof HoldingNotFound ||
-  error instanceof ImportNotFound
+  error instanceof ImportNotFound ||
+  error instanceof MatchNotFound
 
 type ProblemsOf<E> = E extends Fixable ? E["problems"][number] : never
 

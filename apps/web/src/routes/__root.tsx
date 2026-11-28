@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { AppShell } from "../components/shell/app-shell.tsx"
 import { registerLanguageStrategies } from "../i18n.ts"
 import { getLocale } from "../paraglide/runtime.js"
+import { getReviewCount } from "../server/functions/review.ts"
 import appCss from "../styles.css?url"
 import { themeBootScript } from "../ui/theme.ts"
 
@@ -19,13 +20,15 @@ export const Route = createRootRoute({
     // Before the first paint, so a remembered theme never flashes the other one.
     scripts: [{ children: themeBootScript }],
   }),
+  loader: async () => ({ reviewCount: await getReviewCount() }),
   component: RootComponent,
 })
 
 function RootComponent() {
+  const { reviewCount } = Route.useLoaderData()
   return (
     <RootDocument>
-      <AppShell>
+      <AppShell badges={{ review: reviewCount }}>
         <Outlet />
       </AppShell>
     </RootDocument>

@@ -16,6 +16,7 @@ import { Array as Arr, Effect, Schema } from "effect"
 import { SqlClient } from "effect/sql/SqlClient"
 import { getAccount } from "./accounts.ts"
 import { recordCheckpoint } from "./checkpoints.ts"
+import { restoreMergedManualEntries } from "./match-snapshots.ts"
 import { CurrentOwner } from "./owners.ts"
 import { decodeSpreadsheet } from "./spreadsheet.ts"
 
@@ -198,7 +199,8 @@ export const listImports = (ownerId: OwnerId, accountId: AccountId) =>
 /**
  * Undoes one of the Owner's Imports: removes exactly the Transactions and
  * Balance Checkpoints it created, and the Import itself. Manual Transactions
- * and other Imports are untouched, and the same file can then be imported
+ * and other Imports are untouched, and manual entries that were merged into its
+ * lines by a confirmed Match are restored, and the same file can then be imported
  * again as a fresh Import. Fails with `ImportNotFound` when the Import isn't
  * the Owner's or was already undone.
  */
@@ -212,6 +214,8 @@ export const undoImport = (ownerId: OwnerId, importId: string) =>
       .withTransaction(
         Effect.gen(function* () {
           yield* sql`DELETE FROM balance_checkpoint WHERE owner_id = ${ownerId} AND import_id = ${id}`
+          // Manual entries merged into this Import's lines come back as the Owner typed them.
+          yield* restoreMergedManualEntries(ownerId, id)
           yield* sql`DELETE FROM transaction WHERE owner_id = ${ownerId} AND import_id = ${id}`
           return yield* sql`DELETE FROM import WHERE owner_id = ${ownerId} AND id = ${id} RETURNING id`
         }),
