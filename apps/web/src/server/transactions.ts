@@ -27,9 +27,10 @@ const TransactionRow = Schema.Struct({
   description: Schema.String,
   source: TransactionSource,
   importId: Schema.NullOr(ImportId),
+  notes: Schema.NullOr(Schema.String),
 })
 
-const decodeRows = (rows: unknown) =>
+export const decodeRows = (rows: unknown) =>
   Schema.decodeUnknownEffect(Schema.Array(TransactionRow))(rows).pipe(
     Effect.orDie,
     Effect.map((decoded) =>
@@ -42,8 +43,8 @@ const decodeRows = (rows: unknown) =>
   )
 
 /** Postgres would hand back a `date` as a JS Date, so it's read as ISO text. */
-const columns = `id, owner_id AS "ownerId", account_id AS "accountId", date::text AS date,
-  amount_cents::text AS "amountCents", description, source, import_id AS "importId"`
+export const columns = `id, owner_id AS "ownerId", account_id AS "accountId", date::text AS date,
+  amount_cents::text AS "amountCents", description, source, import_id AS "importId", notes`
 
 const asTransactionId = (transactionId: string) =>
   Effect.fromOption(Schema.decodeUnknownOption(TransactionId)(transactionId)).pipe(

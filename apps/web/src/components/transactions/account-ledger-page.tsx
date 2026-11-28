@@ -374,6 +374,9 @@ function TransactionRow({
             {transaction.source === "manual" ? m.source_manual() : m.source_import()}
           </span>
         </p>
+        {transaction.notes !== null && (
+          <p className="mt-0.5 truncate text-sm text-muted-foreground">{transaction.notes}</p>
+        )}
       </div>
       <p
         className={cn(

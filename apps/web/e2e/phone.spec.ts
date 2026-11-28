@@ -17,7 +17,8 @@ test("at phone width the tab bar, floating button and sheet are usable", async (
       expect(tabs.getByText(label, { exact: true })).toBeVisible(),
     ),
   )
-  await expect(tabs.getByRole("link")).toHaveCount(1)
+  // Accounts and the Review Queue are built; the rest are greyed.
+  await expect(tabs.getByRole("link")).toHaveCount(2)
 
   const openButton = page.getByRole("button", { name: "Open Account" })
   await openButton.click()

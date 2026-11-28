@@ -58,8 +58,9 @@ test("the rail links only the sections that are built", async ({ page }) => {
     "aria-current",
     "page",
   )
+  await expect(sections.getByRole("link", { name: "Review Queue" })).toBeVisible()
   await expect(sections.getByText("Forecast")).toBeVisible()
-  await expect(sections.getByRole("link")).toHaveCount(1)
+  await expect(sections.getByRole("link")).toHaveCount(2)
 })
 
 test("the Owner adds, edits and deletes manual Transactions and sees the balance follow", async ({

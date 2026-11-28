@@ -251,5 +251,18 @@
   "undo_import_named": "Undo the Import of {fileName}",
   "confirm_undo_import": "Remove Transactions ({count})",
   "undoing_import": "Undoing…",
-  "import_already_undone": "This Import had already been undone, so there was nothing to change."
+  "import_already_undone": "This Import had already been undone, so there was nothing to change.",
+  "review_title": "Review Queue",
+  "review_matches_intro": "These Transactions you entered by hand look like lines from the bank. Confirm a Match to merge them into one Transaction.",
+  "review_match_manual": "You entered",
+  "review_match_bank": "The bank says",
+  "review_match_same_day": "Same day.",
+  "review_match_one_day": "1 day apart.",
+  "review_match_days": "{days} days apart.",
+  "review_match_keeps": "Confirming keeps the bank's date, amount and description, and your description becomes a note.",
+  "review_match_confirm": "Confirm Match",
+  "review_match_reject": "Not the same",
+  "review_match_gone": "That suggestion is no longer available, so nothing was changed.",
+  "review_empty_title": "Nothing to review",
+  "review_empty_body": "Suggested Matches will appear here after an Import."
 }

@@ -251,5 +251,18 @@
   "undo_import_named": "Anular a importação de {fileName}",
   "confirm_undo_import": "Remover movimentos ({count})",
   "undoing_import": "A anular…",
-  "import_already_undone": "Esta importação já tinha sido anulada, por isso não havia nada a alterar."
+  "import_already_undone": "Esta importação já tinha sido anulada, por isso não havia nada a alterar.",
+  "review_title": "Por rever",
+  "review_matches_intro": "Estes movimentos que registou à mão parecem linhas do banco. Confirme uma correspondência para os juntar num só movimento.",
+  "review_match_manual": "Registou",
+  "review_match_bank": "O banco indica",
+  "review_match_same_day": "No mesmo dia.",
+  "review_match_one_day": "Com 1 dia de diferença.",
+  "review_match_days": "Com {days} dias de diferença.",
+  "review_match_keeps": "Ao confirmar, ficam a data, o montante e a descrição do banco, e a sua descrição passa a nota.",
+  "review_match_confirm": "Confirmar correspondência",
+  "review_match_reject": "Não é o mesmo",
+  "review_match_gone": "Esta sugestão já não está disponível, por isso nada foi alterado.",
+  "review_empty_title": "Nada por rever",
+  "review_empty_body": "As correspondências sugeridas aparecem aqui depois de uma importação."
 }
